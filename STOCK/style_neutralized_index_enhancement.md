@@ -57,11 +57,14 @@
 
 - A股双边摩擦按 **0.5%**（卖 0.3% + 买 0.2%）建模，高换手策略必须用此成本回测。
 
-## ⚠️ MaxDD 口径说明（review 修正）
+## ⚠️ MaxDD 口径说明（review 修正 + 2026-08 复核）
 
 本文件第三节的 MaxDD 数字（-36.57% 等）取自 final_quant 仓库旧版回测，未标注计算公式。回撤控制研究（[risk_control.md](./risk_control.md)）已确认此前部分回测存在**计算 bug：把净值绝对差当百分比**（正确口径为 `(cummax-nav)/cummax` 的相对回撤），并据此将同框架 BASE+VAL 的 MaxDD 从 36.5% 修正为 19.5%。
 
-⚠️ 本文件策略配置（final_quant 微观因子、Top5~Top100）与 risk_control（factor_dic 价值因子、Top50）**不同**，MaxDD 数字不能直接替换为 19.5%；但旧口径 bug 的嫌疑相同，**这些 MaxDD 数字需回源 final_quant 用修正公式复核后才能采信**。
+**2026-08 复核结论**：
+- ⚠️ **无法回源验证**：final_quant 本地 worktree（`final_quant/`）为空，-36.57% 无法用源仓库代码复现。
+- ⚠️ **量级相近但配置不同**：用本机 `final_method/equity_final_method_fixed.csv`（641 行纯净值序列）按修正公式重算得 **MaxDD 34.39%、CAGR 25.13%、日频 Sharpe 0.80**——与 -36.57%/7.09%/0.47 量级相近但数字对不上（策略配置不同），**无法确认也不能排除 -36.57% 为旧口径 bug 所致**。
+- ⚠️ 本文件策略配置（final_quant 微观因子、Top5~Top100）与 risk_control（factor_dic 价值因子、Top50）不同，MaxDD 数字不能直接替换为 19.5%。**上述 MaxDD 数字仍需回源 final_quant 用修正公式复核后才可采信**；在此之前按 ⚠️ 未复核对待（其余 ✅ 结论不受影响）。
 
 ## 避坑清单
 
