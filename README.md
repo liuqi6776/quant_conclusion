@@ -15,7 +15,8 @@
 - [股票 STOCK](./STOCK/README.md)
   - [风格中性化指数增强（final_quant）](./STOCK/style_neutralized_index_enhancement.md)
   - [期权增强型全局策略 Study 005（quant-system）](./STOCK/option_enhanced_study005.md)
-  - [新闻情感与股价预测（news_stock_research）](./STOCK/news_sentiment_prediction.md)
+  - [新闻情感与股价预测（news_stock_research）](./STOCK/news_sentiment_prediction.md)（⚠️ 未验证）
+  - [回撤控制研究（risk_control.md）](./STOCK/risk_control.md)
 - [ETF](./ETF/README.md)
   - [A股ETF期权 Max Pain 研究（quant-research）](./ETF/max_pain_etf_options.md)
 - [可转债 CB](./CB/README.md)
