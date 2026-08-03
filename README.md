@@ -15,6 +15,7 @@
 - [股票 STOCK](./STOCK/README.md)
   - [风格中性化指数增强（final_quant）](./STOCK/style_neutralized_index_enhancement.md) — ✅ 因子确认 / ⚠️ MaxDD 待回源复核
   - [回撤控制：MA20 三档（risk_control）](./STOCK/risk_control.md) — ✅ 已确认（含 2018-2019 独立 OOS）
+  - [多资产避险配置：RS12 弱段资产替换（quant-system）](./STOCK/defensive_asset_allocation.md) — ✅ 已确认（V8 三资产等权：MaxDD 6.1%, 卡玛 4.37）
   - [期权增强型全局策略 Study 005（quant-system）](./STOCK/option_enhanced_study005.md) — ❌ 已证伪（Sharpe 3.08 无法复现）
   - [新闻情感与股价预测（news_stock_research）](./STOCK/news_sentiment_prediction.md) — ❌ 已证伪（显著性检验未通过）
   - [筹码边际因子与主力资金流互补（iFinD 实测）](./STOCK/chip_moneyflow_complement.md)

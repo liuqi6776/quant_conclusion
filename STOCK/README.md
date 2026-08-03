@@ -15,3 +15,4 @@ A股股票品类已确认研究成果索引。
 | [style_factors.md](./style_factors.md) | 风格因子增量：巴菲特式质量/价值/成长对主策略贡献（VAL 合成价值系 +RS12 年化 16.1%） | ✅ 已完成（价值系显著增量 / 质量·成长反向） |
 | [alpha101_factors.md](./alpha101_factors.md) | WorldQuant Alpha101 代表因子验证（12 个量价因子对主策略增量） | ✅ 已完成（月频下无增量, ILLIQ A股反向） |
 | [risk_control.md](./risk_control.md) | 回撤控制对比：MA20三档/波动率目标/回撤触发/CPPI-TIPP | ✅ 已完成（MA20三档最优：MaxDD 19.5%→15.4%, 卡玛 2.10；含 2018-2019 独立 OOS ✅） |
+| [defensive_asset_allocation.md](./defensive_asset_allocation.md) | 多资产避险：RS12 弱段持货基/国债/黄金/混合对比 | ✅ 已完成（V8 三资产等权最优：MaxDD 22.3%→6.1%, 卡玛 4.37；脚本见 scripts/defensive_asset/） |
