@@ -226,7 +226,8 @@ def main():
         if i + 1 >= len(rebal):
             continue
         rb_next = rebal[i + 1]
-        y = int(rb[:4])
+        # 收益期 (rb, rb_next] 归 rb_next 所属年份选参 (修复: 参数晚一个持有期生效)
+        y = int(rb_next[:4])
         if y == 2020:
             d = DEFAULT_DEEP
         else:

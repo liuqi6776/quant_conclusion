@@ -35,6 +35,7 @@ OUT_DIR = rv.OUT_DIR
 COST = rv.COST_BPS / 10000.0
 TOP_N = rv.TOP_N
 SQRT_242 = np.sqrt(242.0)
+SL_COST = 0.01   # 止损执行摩擦: 触发转现金日扣 1% (滑点+卖出成本, 敏感性假设)
 
 # (label, 止损阈值, 对冲beta, 基差年化, 是否叠加MA20三档)
 VARIANTS = [
@@ -160,6 +161,11 @@ def main():
                 alive = ~trig
                 comb_ = comb.where(alive, 0.0)
                 comb_ret = comb_.mean(axis=1)
+                # 止损执行摩擦: 首次转现金日扣 SL_COST × 当日止损个股权重
+                # (滑点+卖出成本, 未计跌停无法成交/隔夜跳空; 每股权重约 1/TOP_N)
+                new_trig = ((cum.shift(1, fill_value=1.0) < (1 - sl))
+                            & ~(cum.shift(2, fill_value=1.0) < (1 - sl)))
+                comb_ret = comb_ret - SL_COST * new_trig.astype(float).mean(axis=1)
             else:
                 comb_ret = comb.mean(axis=1)
             hwm = nav

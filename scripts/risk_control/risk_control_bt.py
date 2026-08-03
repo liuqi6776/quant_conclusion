@@ -141,6 +141,10 @@ def main():
     st_floor = {lb: (par["alpha"] if rtype == "cppi" else 0.90)
                 for (lb, rtype, par) in VARIANTS}
     st_w_half = {lb: False for lb in labels}
+    # DD 变体 shadow NAV: 假想未降仓的组合净值, 用于计算回撤与恢复
+    # (修复: 原用实际 NAV 计算 dd, 空仓后 NAV 冻结导致无法自行恢复到恢复线)
+    st_shadow = {lb: 1.0 for lb in labels}
+    st_shadow_hwm = {lb: 1.0 for lb in labels}
     rs12_days = 0
 
     for i, rb in enumerate(rebal):
@@ -167,6 +171,8 @@ def main():
             hwm = st_hwm[lb]
             floor = st_floor[lb]
             w_half = st_w_half[lb]
+            shadow = st_shadow[lb]
+            shadow_hwm = st_shadow_hwm[lb]
             ws = []
             for t in hold:
                 r_t = e_ret.loc[t]
@@ -181,7 +187,11 @@ def main():
                         if np.isfinite(v) and v > 0:
                             w = float(np.clip(par["tgt"] / v, par["floor_w"], 1.0))
                     elif rtype == "dd":
-                        dd = nav / hwm - 1.0
+                        # shadow NAV: 假想始终满仓股票组合, 回撤/恢复基于 shadow
+                        # (空仓后 shadow 仍随组合波动, 可自行恢复, 而非等 RS12 救援)
+                        shadow *= (1.0 + comb_ret.loc[t])
+                        shadow_hwm = max(shadow_hwm, shadow)
+                        dd = shadow / shadow_hwm - 1.0
                         if w_half and dd >= par["fix"]:
                             w_half = False
                         if dd <= par["half"]:
@@ -201,6 +211,8 @@ def main():
             st_hwm[lb] = hwm
             st_floor[lb] = floor
             st_w_half[lb] = w_half
+            st_shadow[lb] = shadow
+            st_shadow_hwm[lb] = shadow_hwm
 
     # ---------- 汇总 ----------
     bm_e_m, bm_i_m = {}, {}

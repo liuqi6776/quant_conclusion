@@ -287,7 +287,9 @@ def main():
         plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei"]
         plt.rcParams["axes.unicode_minus"] = False
         fig, ax = plt.subplots(figsize=(11, 5.5))
-        colors = ["#d62728", "#1f77b4", "#2ca02c", "#ff7f0e", "#9467bd"]
+        # 10 变体 10 色 (修复: 原只有 5 色, V5-V8/V8d 画不出)
+        colors = ["#d62728", "#1f77b4", "#2ca02c", "#ff7f0e", "#9467bd",
+                  "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"]
         for (nm, nav), cc in zip(navs.items(), colors):
             ax.plot(nav.index, nav.values, label=nm, color=cc, lw=1.4)
         ax.set_title("RS12 弱段持不同避险资产 - 净值曲线 (BASE+VAL+RS12+MA20三档0.98)")

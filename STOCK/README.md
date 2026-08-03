@@ -14,5 +14,5 @@ A股股票品类已确认研究成果索引。
 | [regime_study.md](./regime_study.md) | 市场状态研究：2020~2026 因子×小盘/全市场分类、时期归因、RS12 择时回测 | ✅ 已完成（RS12 择时超额 vs ETF +20.8%） |
 | [style_factors.md](./style_factors.md) | 风格因子增量：巴菲特式质量/价值/成长对主策略贡献（VAL 合成价值系 +RS12 年化 16.1%） | ✅ 已完成（价值系显著增量 / 质量·成长反向） |
 | [alpha101_factors.md](./alpha101_factors.md) | WorldQuant Alpha101 代表因子验证（12 个量价因子对主策略增量） | ✅ 已完成（月频下无增量, ILLIQ A股反向） |
-| [risk_control.md](./risk_control.md) | 回撤控制对比：MA20三档/波动率目标/回撤触发/CPPI-TIPP | ⚠️ 已修正同日前视并重跑（2026-08-03：主基准 32.28%→16.04%，MA20三档降级为温和改善，卡玛 0.89；含 2018-2019 独立 OOS ✅） |
-| [defensive_asset_allocation.md](./defensive_asset_allocation.md) | 多资产避险：RS12 弱段持货基/国债/黄金/混合对比 | ⚠️ 已修正代码并重跑（2026-08-03 修复 MA20 前视/V4 公式；修复后 V0 收益最高 16.25%、V8 卡玛最优 0.94；上游 risk_control 已同步重估；脚本见 scripts/defensive_asset/） |
+| [risk_control.md](./risk_control.md) | 回撤控制对比：MA20三档/波动率目标/回撤触发/CPPI-TIPP | ⚠️ 已修正同日前视并重跑（2026-08-03 三轮审查：主基准 32.28%→16.04%，walk-forward 改按 rb_next 选参 15.06%、DD 改 shadow NAV 14.28%、止损8 计摩擦后 15.90%；含 2018-2019 独立 OOS ✅） |
+| [defensive_asset_allocation.md](./defensive_asset_allocation.md) | 多资产避险：RS12 弱段持货基/国债/黄金/混合对比 | ⚠️ 已修正代码并重跑（2026-08-03 三轮审查：修复 MA20 前视/V4 公式、V5-V8 改月度再平衡；V0 收益最高 16.25%、V8 月平衡卡玛最优 0.93、V8d 日恒权对照 0.94；上游 risk_control 已同步重估；脚本见 scripts/defensive_asset/） |
