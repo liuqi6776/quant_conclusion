@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-拉取避险/替代资产 ETF 日线 (akshare) -> research/serve/data/etf/{code}.parquet
+拉取避险/替代资产 ETF 日线 (akshare) -> {serve}/data/etf/{code}.parquet
 用于验证: RS12 弱市段从"持 512100"改为"持货基/国债/黄金/红利"能否压低回撤
+
+注意: 输出目录与 defensive_asset_bt.py 的 ETF_DIR 保持同一表达式,
+      保证两端脚本可组成端到端流程 (数据源: akshare 不复权, 与工作区
+      tushare fund_daily 数据可能存在差异, 使用前需对齐).
 """
 import os
 import time
@@ -9,7 +13,8 @@ import time
 import akshare as ak
 import pandas as pd
 
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "etf")
+# 与 defensive_asset_bt.py 的 ETF_DIR 一致: <serve>/data/etf
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "serve", "data", "etf")
 os.makedirs(OUT, exist_ok=True)
 
 # code: (akshare symbol, 名称)

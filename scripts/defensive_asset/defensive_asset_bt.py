@@ -10,7 +10,8 @@
   V3 黄金ETF:  518880 (波动大, 检验是否真避险)
   V4 弱段动量: 弱段调仓日选过去20日最强避险资产 (货基/国债/黄金) 持有
 
-数据: research/serve/data/etf/{code}.parquet (tushare fund_daily)
+数据: research/serve/data/etf/{code}.parquet (工作区实际使用 tushare fund_daily 拉取;
+      fetch_defensive_etf.py 为 akshare 备选脚本, 两者数据源/路径需对齐)
 输出: research/factor_dic/results/defensive_asset_bt.txt
 """
 import os
@@ -89,8 +90,9 @@ def main():
     sig_rs12 = ((ratio / ratio.shift(240)).rolling(5).mean() - 1.0 > 0).reindex(rebal)
     idx_close = sml["close"]
     ma20 = idx_close.rolling(20).mean()
+    # MA20 三档仓位: 用 T-1 日收盘信号, T 日生效 (修复同日信号前视)
     ma20_w = pd.Series(1.0, index=sml.index)
-    c, m = idx_close, ma20
+    c, m = idx_close.shift(1), ma20.shift(1)
     ma20_w[c < m] = 0.5
     ma20_w[c < DEEP * m] = 0.0
 
@@ -101,7 +103,8 @@ def main():
     gold = load_asset_ret("518880.SH")
 
     def asset_grid(dates):
-        return {d: a.reindex(dates).ffill().fillna(0.0).values for d, a in [
+        # 缺失日填 0 (NAV 不变), 不做 ffill 复制上一日收益 (修复 ffill 语义错误)
+        return {d: a.reindex(dates).fillna(0.0).values for d, a in [
             ("512100", etf1000), ("货基", mm), ("国债", bond), ("黄金", gold)]}
 
     grid = asset_grid(dates_idx)
@@ -118,12 +121,14 @@ def main():
             continue
         scores = {}
         for nm, a in [("货基", mm), ("国债", bond), ("黄金", gold)]:
-            scores[nm] = float(a.reindex(prev).prod())
+            r = a.reindex(prev)
+            # 动量: 过去20日复利累计收益 (1+r).prod()-1 (修复直接 prod 的错误)
+            scores[nm] = float((1.0 + r.fillna(0.0)).prod() - 1.0)
         best = max(scores, key=scores.get)
         seg = dates_idx[(dates_idx > rb) & (dates_idx <= rb_next)]
         if len(seg):
             src = {"货基": mm, "国债": bond, "黄金": gold}[best]
-            mom_series.loc[seg] = src.reindex(seg).ffill().fillna(0.0).values
+            mom_series.loc[seg] = src.reindex(seg).fillna(0.0).values
 
     variants = [
         ("V0 现状: 弱段持512100", grid["512100"]),
@@ -213,7 +218,7 @@ def main():
         cagr, sh, mdd, cm = s
         lines.append(f"{vname:<38} 年化{cagr:>7.2%}  Sharpe{sh:>6.2f}  MaxDD{mdd:>7.2%}  卡玛{cm:>6.2f}")
 
-    # 分年度 (V0 vs V1)
+    # 分年度 (V0 vs V5 混合50/50)
     lines.append("\n分年度对比 (V0 现状 vs V5 货基50%+国债50%):")
     pr0 = pd.Series(0.0, index=dates_idx)
     pr1 = pd.Series(0.0, index=dates_idx)
@@ -239,7 +244,7 @@ def main():
         ypr1 = pr1[pr1.index.str[:4] == str(y)]
         if len(ypr0):
             r0, r1 = (1 + ypr0).prod() - 1, (1 + ypr1).prod() - 1
-            lines.append(f"  {y}: 现状 {r0:>7.2%} | 货基 {r1:>7.2%}")
+            lines.append(f"  {y}: 现状 {r0:>7.2%} | 混合50/50 {r1:>7.2%}")
 
     text = "\n".join(lines) + "\n"
     print(text)
