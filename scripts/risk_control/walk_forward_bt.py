@@ -218,15 +218,22 @@ def main():
                 best_sh, best_d = sh, d
         sel[y] = (best_d, best_sh)
 
-    wf_parts = []
-    for rb in rebal:
+    # walk-forward NAV: 逐段用该段所选参数内部的相对收益复利拼接
+    # (修复: 不再直接拼不同参数回测的绝对 NAV, 避免切换时把路径差异误算为收益)
+    wf_nav = pd.Series(index=rebal, dtype=float)
+    wf_nav[rebal[0]] = 1.0
+    for i, rb in enumerate(rebal):
+        if i + 1 >= len(rebal):
+            continue
+        rb_next = rebal[i + 1]
         y = int(rb[:4])
         if y == 2020:
             d = DEFAULT_DEEP
         else:
             d = sel.get(y, (DEFAULT_DEEP, None))[0]
-        wf_parts.append((rb, navs_deep[d].get(rb, 1.0)))
-    wf_nav = pd.Series(dict(wf_parts)).sort_index()
+        a, b = navs_deep[d].get(rb), navs_deep[d].get(rb_next)
+        if a and b:
+            wf_nav[rb_next] = wf_nav[rb] * (b / a)
 
     pr_wf = wf_nav.pct_change().dropna()
     pr_fix = navs_deep[DEFAULT_DEEP].pct_change().dropna()

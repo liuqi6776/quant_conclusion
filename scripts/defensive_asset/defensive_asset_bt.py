@@ -65,6 +65,24 @@ def stats(pr, per_year=242.0):
     return cagr, sharpe, mdd, cagr / mdd if mdd > 0 else np.nan
 
 
+def monthly_rebalanced(weights, grid, rebal, dates_idx):
+    """月度再平衡混合: 每个调仓日重置为目标权重, 持有期内按资产收益自然漂移
+    (修复: 不再按每日恒权相加, 后者隐含每日再平衡且未计再平衡成本)"""
+    keys = list(weights)
+    rp = np.zeros(len(dates_idx))
+    for i, rb in enumerate(rebal):
+        rb_next = rebal[i + 1] if i + 1 < len(rebal) else dates_idx[-1]
+        lo = dates_idx.searchsorted(rb, side="right")
+        hi = dates_idx.searchsorted(rb_next, side="right")
+        w = dict(weights)  # 调仓日重置目标权重
+        for j in range(lo, hi):
+            r_t = sum(w[k] * grid[k][j] for k in keys)
+            rp[j] = r_t
+            for k in keys:
+                w[k] = w[k] * (1.0 + grid[k][j]) / (1.0 + r_t)
+    return rp
+
+
 def main():
     trade_dates = rv.load_trade_dates()
     dates_idx = pd.Index(trade_dates)
@@ -130,16 +148,23 @@ def main():
             src = {"货基": mm, "国债": bond, "黄金": gold}[best]
             mom_series.loc[seg] = src.reindex(seg).fillna(0.0).values
 
+    # 混合变体: 月度再平衡 (期初等权、期内按收益漂移、调仓日重置)
+    mix5 = monthly_rebalanced({"货基": 0.5, "国债": 0.5}, grid, rebal, dates_idx)
+    mix6 = monthly_rebalanced({"货基": 0.25, "国债": 0.75}, grid, rebal, dates_idx)
+    mix7 = monthly_rebalanced({"货基": 0.75, "国债": 0.25}, grid, rebal, dates_idx)
+    mix8 = monthly_rebalanced({"货基": 1 / 3, "国债": 1 / 3, "黄金": 1 / 3}, grid, rebal, dates_idx)
+
     variants = [
         ("V0 现状: 弱段持512100", grid["512100"]),
         ("V1 货基ETF(零回撤)", grid["货基"]),
         ("V2 国债ETF(十年)", grid["国债"]),
         ("V3 黄金ETF", grid["黄金"]),
         ("V4 弱段动量(货基/国债/黄金)", mom_series.values),
-        ("V5 货基50%+国债50%", 0.5 * grid["货基"] + 0.5 * grid["国债"]),
-        ("V6 货基25%+国债75%", 0.25 * grid["货基"] + 0.75 * grid["国债"]),
-        ("V7 货基75%+国债25%", 0.75 * grid["货基"] + 0.25 * grid["国债"]),
-        ("V8 货基33%+国债33%+黄金33%", (grid["货基"] + grid["国债"] + grid["黄金"]) / 3.0),
+        ("V5 货基50%+国债50%(月平衡)", mix5),
+        ("V6 货基25%+国债75%(月平衡)", mix6),
+        ("V7 货基75%+国债25%(月平衡)", mix7),
+        ("V8 三资产等权(月平衡)", mix8),
+        ("V8d 三资产等权(每日恒权,对照)", (grid["货基"] + grid["国债"] + grid["黄金"]) / 3.0),
     ]
 
     lines = []
@@ -147,6 +172,7 @@ def main():
     lines.append("方向验证: RS12 弱段持避险资产 (BASE+VAL+RS12+MA20三档0.98, 2020-2026)")
     lines.append(f"弱段口径: rs12_off 时持目标资产全额; 强段 = 组合 × MA20三档(deep={DEEP})")
     lines.append(f"货基收益: 511990 价格 + {MM_ANNUAL:.1%}/年分红假设 | 数据源: tushare fund_daily")
+    lines.append("混合变体口径: 月度再平衡 (调仓日重置目标权重, 期内按收益漂移); V8d 为每日恒权对照(隐含每日再平衡)")
     lines.append("=" * 96)
 
     navs = {}
@@ -234,7 +260,7 @@ def main():
             pr1.loc[hold] = pr0.loc[hold].values
         else:
             pr0.loc[hold] = grid["512100"][dates_idx.get_indexer(hold)]
-            pr1.loc[hold] = (0.5 * grid["货基"] + 0.5 * grid["国债"])[dates_idx.get_indexer(hold)]
+            pr1.loc[hold] = mix5[dates_idx.get_indexer(hold)]
         pr0.loc[hold[0]] = pr0.loc[hold[0]] - COST
         pr1.loc[hold[0]] = pr1.loc[hold[0]] - COST
     pr0 = pr0[pr0.index >= rebal[0]]

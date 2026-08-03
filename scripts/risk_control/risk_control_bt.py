@@ -136,6 +136,11 @@ def main():
     labels = [v[0] for v in VARIANTS]
     nav_rb = {lb: {rebal[0]: 1.0} for lb in labels}
     avg_w = {lb: [] for lb in labels}          # RS12强时段的日均仓位
+    # DD/CPPI/TIPP 跨期状态: 高水位/floor/半仓状态从 1.0 起跨月延续 (修复每月重置)
+    st_hwm = {lb: 1.0 for lb in labels}
+    st_floor = {lb: (par["alpha"] if rtype == "cppi" else 0.90)
+                for (lb, rtype, par) in VARIANTS}
+    st_w_half = {lb: False for lb in labels}
     rs12_days = 0
 
     for i, rb in enumerate(rebal):
@@ -158,8 +163,10 @@ def main():
 
         for (lb, rtype, par) in VARIANTS:
             nav = nav_rb[lb].get(rb, 1.0)
-            hwm, floor = nav, 0.90 * nav
-            w_half = False
+            # DD/CPPI/TIPP 跨期状态 (不每月重置, 修复): 高水位/floor/半仓状态跨月延续
+            hwm = st_hwm[lb]
+            floor = st_floor[lb]
+            w_half = st_w_half[lb]
             ws = []
             for t in hold:
                 r_t = e_ret.loc[t]
@@ -191,6 +198,9 @@ def main():
                 avg_w[lb].append(np.mean(ws))
             nav *= (1.0 - COST)
             nav_rb[lb][rb_next] = nav
+            st_hwm[lb] = hwm
+            st_floor[lb] = floor
+            st_w_half[lb] = w_half
 
     # ---------- 汇总 ----------
     bm_e_m, bm_i_m = {}, {}
@@ -200,8 +210,8 @@ def main():
         rb_next = rebal[i + 1]
         hi, hn = trade_dates.index(rb), trade_dates.index(rb_next)
         hold = trade_dates[hi + 1:hn + 1]
-        bm_e_m[rb] = (1 + etf_ret.reindex(hold).fillna(0.0)).prod() - 1
-        bm_i_m[rb] = (1 + idx_ret.reindex(hold).fillna(0.0)).prod() - 1
+        bm_e_m[rb_next] = (1 + etf_ret.reindex(hold).fillna(0.0)).prod() - 1
+        bm_i_m[rb_next] = (1 + idx_ret.reindex(hold).fillna(0.0)).prod() - 1
     bm_e_m, bm_i_m = pd.Series(bm_e_m), pd.Series(bm_i_m)
 
     print("\n" + "=" * 110)

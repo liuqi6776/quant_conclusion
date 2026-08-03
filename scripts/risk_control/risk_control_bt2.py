@@ -155,7 +155,9 @@ def main():
         for (lb, sl, beta, basis, use_ma20) in VARIANTS:
             nav = nav_rb[lb].get(rb, 1.0)
             if sl > 0:
-                alive = cum.shift(1, fill_value=1.0) >= (1 - sl)
+                # 止损触发后转现金, 持有到下次调仓 (永久锁定, 修复"复活"问题)
+                trig = (cum.shift(1, fill_value=1.0) < (1 - sl)).cummax().astype(bool)
+                alive = ~trig
                 comb_ = comb.where(alive, 0.0)
                 comb_ret = comb_.mean(axis=1)
             else:
@@ -189,8 +191,8 @@ def main():
         rb_next = rebal[i + 1]
         hi, hn = trade_dates.index(rb), trade_dates.index(rb_next)
         hold = trade_dates[hi + 1:hn + 1]
-        bm_e_m[rb] = (1 + etf_ret.reindex(hold).fillna(0.0)).prod() - 1
-        bm_i_m[rb] = (1 + idx_ret.reindex(hold).fillna(0.0)).prod() - 1
+        bm_e_m[rb_next] = (1 + etf_ret.reindex(hold).fillna(0.0)).prod() - 1
+        bm_i_m[rb_next] = (1 + idx_ret.reindex(hold).fillna(0.0)).prod() - 1
     bm_e_m, bm_i_m = pd.Series(bm_e_m), pd.Series(bm_i_m)
 
     print("\n" + "=" * 118)
