@@ -161,10 +161,9 @@ def main():
                 alive = ~trig
                 comb_ = comb.where(alive, 0.0)
                 comb_ret = comb_.mean(axis=1)
-                # 止损执行摩擦: 首次转现金日扣 SL_COST × 当日止损个股权重
-                # (滑点+卖出成本, 未计跌停无法成交/隔夜跳空; 每股权重约 1/TOP_N)
-                new_trig = ((cum.shift(1, fill_value=1.0) < (1 - sl))
-                            & ~(cum.shift(2, fill_value=1.0) < (1 - sl)))
+                # 止损执行摩擦: 首次触发日(锁存边沿)扣 SL_COST × 当日止损个股权重
+                # (修复: 基于锁存 trig 的边沿, 重复跌破阈值不重复扣费; 未计跌停无法成交/隔夜跳空)
+                new_trig = trig & ~trig.shift(1, fill_value=False)
                 comb_ret = comb_ret - SL_COST * new_trig.astype(float).mean(axis=1)
             else:
                 comb_ret = comb.mean(axis=1)

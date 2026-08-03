@@ -173,6 +173,8 @@ def main():
             w_half = st_w_half[lb]
             shadow = st_shadow[lb]
             shadow_hwm = st_shadow_hwm[lb]
+            # DD: T 日仓位由 T-1 末 shadow 回撤决定 (跨月状态重算, 无前视)
+            dd_prev = shadow / shadow_hwm - 1.0
             ws = []
             for t in hold:
                 r_t = e_ret.loc[t]
@@ -187,16 +189,12 @@ def main():
                         if np.isfinite(v) and v > 0:
                             w = float(np.clip(par["tgt"] / v, par["floor_w"], 1.0))
                     elif rtype == "dd":
-                        # shadow NAV: 假想始终满仓股票组合, 回撤/恢复基于 shadow
-                        # (空仓后 shadow 仍随组合波动, 可自行恢复, 而非等 RS12 救援)
-                        shadow *= (1.0 + comb_ret.loc[t])
-                        shadow_hwm = max(shadow_hwm, shadow)
-                        dd = shadow / shadow_hwm - 1.0
-                        if w_half and dd >= par["fix"]:
+                        # 用 T-1 末的 shadow 回撤决定 T 日仓位 (修复: 先决策再吃当日收益, 无前视)
+                        if w_half and dd_prev >= par["fix"]:
                             w_half = False
-                        if dd <= par["half"]:
+                        if dd_prev <= par["half"]:
                             w_half = True
-                        w = 0.0 if dd <= par["zero"] else (0.5 if w_half else 1.0)
+                        w = 0.0 if dd_prev <= par["zero"] else (0.5 if w_half else 1.0)
                     elif rtype == "cppi":
                         floor = max(floor, par["alpha"] * hwm)
                         w = float(np.clip(par["m"] * (nav - floor) / nav, 0.0, 1.0)) if nav > 0 else 0.0
@@ -204,6 +202,12 @@ def main():
                     r_t = w * comb_ret.loc[t]      # 降仓部分按现金缓冲
                 nav *= (1.0 + r_t)
                 hwm = max(hwm, nav)
+                # shadow NAV: 假想始终满仓股票组合, 与 RS12 状态无关 (修复: 弱段也更新)
+                # 更新发生在当日收益应用之后, 供 T+1 日决策使用 (无前视)
+                if rtype == "dd":
+                    shadow *= (1.0 + comb_ret.loc[t])
+                    shadow_hwm = max(shadow_hwm, shadow)
+                    dd_prev = shadow / shadow_hwm - 1.0
             if ws:
                 avg_w[lb].append(np.mean(ws))
             nav *= (1.0 - COST)
