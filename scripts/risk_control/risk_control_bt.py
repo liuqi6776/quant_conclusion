@@ -233,7 +233,7 @@ def main():
     print("\n" + "=" * 110)
     print("回撤控制对比 (BASE+VAL + RS12 框架, 2020-2026, 月度调仓 Top50, 20bps, 风控降仓吃现金)")
     print("=" * 110)
-    print(f"\n{'策略':<16}{'年化':>8}{'Sharpe':>8}{'MaxDD':>9}{'月胜率':>8}{'超额vETF':>10}{'卡玛':>7}{'平均仓位':>8}")
+    print(f"\n{'策略':<16}{'年化':>8}{'Sharpe':>8}{'MaxDD':>9}{'月胜率':>8}{'超额vETF':>10}{'卡玛':>7}{'强段均仓':>8}")
     out_lines = []
     nav_series = {}
     for lb in labels:

@@ -301,6 +301,16 @@ def main():
         fh.write("\n".join(out_lines) + "\n")
 
     # ---------- 图 ----------
+    # ETF 对照: 完整月收益 (rb, rb_next] 复利记在 rb_next, 与策略 NAV 对齐
+    # (修复: 原取调仓日单日收益, 视觉对照偏低/失真)
+    etf_m = {}
+    for i, rb in enumerate(rebal):
+        if i + 1 >= len(rebal):
+            continue
+        rb_next = rebal[i + 1]
+        hi, hn = trade_dates.index(rb), trade_dates.index(rb_next)
+        etf_m[rb_next] = (1 + etf_ret.reindex(trade_dates[hi + 1:hn + 1]).fillna(0.0)).prod() - 1
+    etf_m = pd.Series(etf_m)
     fig, ax = plt.subplots(figsize=(13, 7.5))
     x_all = sorted(rebal)
     ax.plot(np.arange(len(x_all)), navs_none.reindex(x_all).ffill().values,
@@ -309,7 +319,7 @@ def main():
             label=f"固定 MA20(0.98)", lw=1.8, color="#c33")
     ax.plot(np.arange(len(x_all)), wf_nav.reindex(x_all).ffill().values,
             label="walk-forward (每年滚动选参)", lw=1.8, color="#26c")
-    ax.plot(np.arange(len(x_all)), (1 + etf_ret.reindex(x_all).fillna(0)).cumprod().values,
+    ax.plot(np.arange(len(x_all)), (1 + etf_m.reindex(x_all).fillna(0)).cumprod().values,
             label="512100ETF", lw=1.2, ls="--", color="#999")
     ax.set_yscale("log")
     ax.set_ylabel("净值(对数)")

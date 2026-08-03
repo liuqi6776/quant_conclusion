@@ -203,7 +203,7 @@ def main():
     print("\n" + "=" * 118)
     print("回撤控制补充: 个股止损 / IM空头对冲 (BASE+VAL+RS12, 月度调仓 Top50, 20bps, 2020-2026)")
     print("=" * 118)
-    print(f"\n{'策略':<20}{'年化':>8}{'Sharpe':>8}{'MaxDD':>9}{'月胜率':>8}{'超额vETF':>10}{'卡玛':>7}{'平均仓位':>8}")
+    print(f"\n{'策略':<20}{'年化':>8}{'Sharpe':>8}{'MaxDD':>9}{'月胜率':>8}{'超额vETF':>10}{'卡玛':>7}{'强段均仓':>8}")
     out_lines = []
     nav_series = {}
     for lb in labels:
