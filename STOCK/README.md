@@ -16,3 +16,4 @@ A股股票品类已确认研究成果索引。
 | [alpha101_factors.md](./alpha101_factors.md) | WorldQuant Alpha101 代表因子验证（12 个量价因子对主策略增量） | ✅ 已完成（月频下无增量, ILLIQ A股反向） |
 | [risk_control.md](./risk_control.md) | 回撤控制对比：MA20三档/波动率目标/回撤触发/CPPI-TIPP | ⚠️ 核心回测逻辑通过五轮静态审计（2026-08-03）：主基准 32.28%→16.04%，walk-forward 15.06%、DD shadow 无前视 13.39%、止损8 锁存边沿摩擦 16.01%；⚠️ 因私有数据/上游环境不可外部独立复现；含 2018-2019 独立 OOS ✅ |
 | [defensive_asset_allocation.md](./defensive_asset_allocation.md) | 多资产避险：RS12 弱段持货基/国债/黄金/混合对比 | ⚠️ 已修正代码并重跑（2026-08-03 三轮审查：修复 MA20 前视/V4 公式、V5-V8 改月度再平衡；V0 收益最高 16.25%、V8 月平衡卡玛最优 0.93、V8d 日恒权对照 0.94；上游 risk_control 已同步重估；脚本见 scripts/defensive_asset/） |
+| [study008_incremental_enhancements.md](./study008_incremental_enhancements.md) | study_008 增量增强路径验证：BASE+VAL 4因子基线 + 六条增量路径（补因子×2/打分层/加权/模型/财务因子）全否定 + PIT 数据端核验通过 | ✅ 基线已确认（2020-01~2026-07 年化 14.62%/卡玛 0.55） / ❌ 六条增量路径全部证伪（2026-08-06） |

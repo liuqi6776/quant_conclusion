@@ -20,6 +20,7 @@
   - [新闻情感与股价预测（news_stock_research）](./STOCK/news_sentiment_prediction.md) — ❌ 已证伪（显著性检验未通过）
   - [筹码边际因子与主力资金流互补（iFinD 实测）](./STOCK/chip_moneyflow_complement.md)
   - [新闻情绪温度计辅助择时（设计）](./STOCK/news_sentiment_timing.md)
+  - [study_008 增量增强路径验证（quant_system_v2）](./STOCK/study008_incremental_enhancements.md) — ✅ 基线已确认（BASE+VAL 4因子等权 ≥0.93，年化 14.62%/卡玛 0.55）/ ❌ 六条增量路径全部证伪（补因子×2/打分层/加权/模型层/财务因子）/ ✅ PIT 数据端核验通过（2026-08-06）
 - [ETF](./ETF/README.md)
   - [A股ETF期权 Max Pain 研究（quant-research）](./ETF/max_pain_etf_options.md)
 - [可转债 CB](./CB/README.md)
