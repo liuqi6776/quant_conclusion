@@ -279,3 +279,34 @@ turnover_vol_20：IC-SR≈0.75（月频 IC 序列近似）、skew=0.57、kurt=2.
 1. **多重检验不构成对 turnover_vol_20 IC 信号的威胁**：双重校正后 p<1e-11，NW lag 稳健（6.66→7.17→8.51），IC 无自相关（LB p>0.7）。其"唯一真正正交增量因子"的 IC 层定位进一步稳固。
 2. **csad_std_21 / volume_surge_vol / loud_vol 的 NW t 被 IC 自相关高估**（LB p<0.05 且 t 随 lag 上升），引用 t 值前需用 lag≥19 重估；且三者与 ivol 翻版同源（ρ≈0.9），无增量信息。
 3. **N=21 仅是"因子 IC 检验"一层选择自由度的下界**；因子组合路径、风控参数、打分方式、中性化方式等其他研究者自由度未纳入校正，须以冻结验证集（因子定义/方向/权重冻结后一次性 OOS）作最终裁决。
+
+## 十、数据快照与可复现性（2026-08-06，审查 P0-2）
+
+> 生成器: `research/experiments/make_data_manifest.py`；基线: `research/experiments/data_manifest.json`
+> 检测: `research/experiments/_common.py::check_data_manifest`（实验 run.py 前置调用）
+> 测试: `python -m pytest research/experiments/tests/test_data_manifest.py`
+
+### 10.1 机制
+
+- 对 4 个数据源（daily / index_weight / index_daily / factor_data）生成轻量指纹 + 全量 sha256（full 模式逐文件 `{sha256, size, mtime}`）；
+- 实验运行前对比基线：**仅新增文件 → `[DATA-UPDATE]` 提示不阻断**；**既有文件内容变化/缺失 → `[DATA-DRIFT]` 退出码 2 阻断**，必须重建快照后才允许运行；
+- 日常检测用 size/mtime 快速跳过未变文件，异常才 sha256 核验，运行开销≈0。
+
+### 10.2 数据漂移实证（为什么必须做）
+
+审查 P0-2"无法确认数据是否变化"在本库**已被实证证实**：
+
+| 项目 | 旧数据快照 | 当前数据快照 | 变化 |
+|---|---|---|---|
+| turnover_vol_20 超额收益 | +28.6% | +49.97% | 基准 000852 序列更新 + 数据补齐 |
+| MA20 三档098 年化 vs BASE+VAL | 16.04% > 15.12% | **13.83% < 14.44%** | **风控增益结论方向反转** |
+| turnover_vol_20 NW t | 6.93 | 7.15 | 数据补齐 |
+
+即：**同一代码、同一参数，仅因底层数据滚动更新，MA20 风控"优于无风控"的结论反转**。任何引用本库数字的场合，必须先确认对应的数据快照（`data_manifest.json` 的 `generated_at`）与实验运行时一致。
+
+### 10.3 复现约定
+
+1. 运行实验前：`make_data_manifest.py`（数据有更新时重建基线）；
+2. 运行实验：`exp_*_run.py`，输出 `actual_metrics.json` + `environment.lock.json`（记录 python/依赖/上游 commit）；
+3. 指标不匹配退出码 1，数据漂移退出码 2——**两条路径都禁止"改期望值硬过"**；
+4. 结论库文档的每个数字，须能由上述实验复现（已复现: turnover_vol_20 2026-08-06 全量 PASS）。
