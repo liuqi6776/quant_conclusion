@@ -3,7 +3,8 @@
 > 脚本: `research/factor_dic/regime_study.py`（结果: `research/factor_dic/results/regime_study.txt`）
 > 数据: 21 因子月度 IC（中证1000 成分股, 未来 20 日收益）+ 指数日线（000852/000300/000905/000016/932000/512100 ETF/510300 ETF, 2018~2026 来自 tushare）
 > 验证区间: 2020-01 ~ 2026-06（月度调仓, Top50, 20bps 双边成本, 因子 T 日可得、未来收益无前视）
-> 状态: ✅ 已完成
+> **状态**: ⚠️ 候选 — 描述性市场状态研究（因子×市场分类、RS12 择时 +20.8% vs ETF），供因子理解与择时参考，非独立确认
+> **多维标签**: research_status=validated · oos_scope=none · reproducibility=partial · data_availability=private · code_review=not_reviewed · execution_validation=partial
 
 ## 研究问题
 

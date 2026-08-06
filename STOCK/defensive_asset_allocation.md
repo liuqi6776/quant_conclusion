@@ -1,6 +1,7 @@
 # 多资产避险配置：RS12 弱段持不同资产对比
 
-> **状态**：⚠️ 已修正代码并重跑（2026-08-03，三轮审查）
+> **状态**: ⚠️ 候选 — 单周期（2020~2026）风险预算方案（V8 卡玛 0.93 vs V0 0.67），未证明跨宏观周期稳健（国债/黄金环境依赖，货基含 1.8% 分红假设）
+> **多维标签**: research_status=validated · oos_scope=none · reproducibility=partial · data_availability=private · code_review=passed · execution_validation=partial
 > **结论变化**：修复 MA20 同日前视后，V0（弱段持 512100）年化收益仍最高（16.25%，原 32.75% 含"先知"红利）；V8 三资产等权收益下降，但 MaxDD/卡玛在防御组内最优（卡玛 0.93 vs V0 0.67）。**"更稳"路径成立，"V8 全面最优"不成立。**
 
 ## 一句话结论

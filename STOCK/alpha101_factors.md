@@ -3,7 +3,8 @@
 > 脚本: `research/factor_dic/alpha101_factors.py`（结果: `research/factor_dic/results/alpha101_factors.txt`）
 > 数据: 本地日频（open/high/low/close/vol/amount, 2058 只, 2762 天）
 > 验证区间: 2020-01 ~ 2026-06（月度调仓, 中证1000 成分股, Top50, 20bps 双边成本, 因子 T 日可得无前视）
-> 状态: ✅ 已完成（简化实现，保留 alpha 直觉）
+> **状态**: ❌ 已证伪（对"Alpha101 给主策略带来增量"假设）— 月频下 12 个代表量价因子无增量，ILLIQ 在 A 股反向
+> **多维标签**: research_status=rejected · oos_scope=none · reproducibility=partial · data_availability=private · code_review=not_reviewed · execution_validation=partial
 
 ## 研究问题
 

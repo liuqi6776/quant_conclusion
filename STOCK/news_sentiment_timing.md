@@ -3,7 +3,8 @@
 > 来源: 本项目 quant_conclusion 延伸研究（iFinD MCP 数据实测，2026-08-01）
 > 关联已确认结论: [新闻情感与股价预测](./news_sentiment_prediction.md)（T+2 最佳窗口、负面预测力 1.5 倍、DOS 预测波动）；[风格中性化指数增强](./style_neutralized_index_enhancement.md)（MA20 三档仓位 100/50/0）
 > 验证方式: iFinD `search_news` 实测市场新闻流可日拉（2026-07-29 ~ 07-31）
-> 状态: 方法设计 ⚠️ 未验证（待回测确认择时增益）
+> **状态**: 🔬 探索中 — 方法设计，待回测确认择时增益
+> **多维标签**: research_status=exploratory · oos_scope=none · reproducibility=none · data_availability=private · code_review=not_reviewed · execution_validation=none
 
 ## 动机
 

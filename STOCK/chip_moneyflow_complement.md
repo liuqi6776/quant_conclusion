@@ -4,7 +4,8 @@
 > 关联已确认结论: [风格中性化指数增强](./style_neutralized_index_enhancement.md)（`chip_concentr_60d` t=-5.33、`moneyflow_large` t=-6.84）
 > 验证方式: iFinD MCP 实测 10 只样本股数据可用性 → tushare 全量拉取（中证1000 历史成分 2125 只股东户数）+ 本地日频行情做 PIT 实证
 > 验证区间: 2020-01 ~ 2026-06（78 个月度截面）
-> 状态: 因子检验 ✅ 已实证（IC 显著）/ 作为独立 alpha 回测超额温和 ⚠️（建议作过滤因子使用）
+> **状态**: ⚠️ 候选 — 因子 IC 实证显著（t=3.92），独立 alpha 超额温和，建议作过滤因子
+> **多维标签**: research_status=validated · oos_scope=none · reproducibility=partial · data_availability=private · code_review=not_reviewed · execution_validation=partial
 
 ## 动机
 

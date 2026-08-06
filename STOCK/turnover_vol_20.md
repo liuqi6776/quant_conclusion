@@ -3,7 +3,8 @@
 > 来源: `quant_conclusion/factor_dic/Workbook1.csv`（600+ 高频因子字典，Fitness 2.02，2026-07-25 版）
 > 脚本: `research/factor_dic/run_validation.py`、`redundancy_check.py`、`combo_backtest.py`
 > 验证区间: 2020-01 ~ 2026-06，中证1000 成分股，月频截面，未来 20 日收益
-> 状态: ✅ 已确认（正交增量因子，纳入现有因子池）
+> **状态**: ⚠️ 候选 — 统计显著的正交增量因子（ICIR 0.76 / NW t 6.93），但未做冻结后独立 OOS 与多重检验控制，主组合全期仍跑输基准
+> **多维标签**: research_status=validated · oos_scope=none · reproducibility=partial · data_availability=private · code_review=not_reviewed · execution_validation=partial
 
 ## 一、因子定义
 

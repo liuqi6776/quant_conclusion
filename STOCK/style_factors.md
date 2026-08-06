@@ -3,7 +3,8 @@
 > 脚本: `research/factor_dic/style_factors.py`（数据抓取: `research/factor_dic/fetch_style_data.py`；结果: `research/factor_dic/results/style_factors.txt`）
 > 数据: tushare `daily_basic` 全字段（78 调仓日）+ `fina_indicator` 全字段（2058 只逐股, PIT 对齐）
 > 验证区间: 2020-01 ~ 2026-06（月度调仓, 中证1000 成分股, Top50, 20bps 双边成本, 因子 T 日可得无前视）
-> 状态: ✅ 已完成
+> **状态**: ⚠️ 候选 — 样本内验证价值系（VAL/SP/BP/DP）显著增量（+RS12 年化 16.1%），无独立 OOS、无多重检验控制
+> **多维标签**: research_status=validated · oos_scope=none · reproducibility=partial · data_availability=private · code_review=not_reviewed · execution_validation=partial
 
 ## 研究问题
 

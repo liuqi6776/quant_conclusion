@@ -3,7 +3,8 @@
 > 来源仓库: [liuqi6776/news_stock_research](https://github.com/liuqi6776/news_stock_research)
 > 验证方式: 7,075 条新闻 + 价格数据实证（2024-10-11 ~ 2025-02-21，**80 个唯一交易日**）；**Newey-West HAC 显著性检验**（`research/factor_dic/verify_news_sentiment.py` → `results/news_sentiment_verify.txt`）
 > 注: 此前文档误写"390 个交易日/78 个交易日"：实为 80 个唯一交易日；多空序列为 78 天 × 预测窗口
-> 状态: ❌ 已证伪（主假设不成立——逐条净情感相关全部不显著 NWt<1.96，每日聚合 n=80 全部不显著；仅负面情感与多空在特定口径下名义显著但不可靠，见下）
+> **状态**: ❌ 已证伪 — 主假设（净情感预测收益）不成立，显著性检验未通过（NWt<1.96），证据强度不足以支撑预测信号
+> **多维标签**: research_status=rejected · oos_scope=none · reproducibility=partial · data_availability=private · code_review=not_reviewed · execution_validation=none
 
 ## 已确认结论
 

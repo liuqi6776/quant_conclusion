@@ -3,7 +3,8 @@
 > 来源仓库: [liuqi6776/final_quant](https://github.com/liuqi6776/final_quant)
 > 验证方式: 2021-2026 全周期样本外（OOS）回测 + Newey-West 统计修正 + 风格归因
 > 验证区间: 2021-01 ~ 2026-06（中证1000 成分股，全量 4.6M 行）
-> 状态: ✅ 已确认（⚠️ 注意：MaxDD 数字沿用旧口径，待按修正公式复核，见下）
+> **状态**: ⚠️ 候选 — 因子经 Newey-West 修正后显著，但为样本内全周期验证、无法回源独立复现（final_quant 本地 worktree 为空），MaxDD 待回源复核
+> **多维标签**: research_status=validated · oos_scope=none · reproducibility=none · data_availability=private · code_review=not_reviewed · execution_validation=partial
 
 ## 已确认结论
 

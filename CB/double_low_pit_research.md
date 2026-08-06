@@ -4,7 +4,8 @@
 > 验证方式: 零前视 Point-in-Time（PIT）回测，5 轮机构级盲测审计 **PASS**
 > 验证区间: 2024-01-02 ~ 2026-06-25（598 个交易日）
 > 交易成本: 20bps 双边（买 10 + 卖 10），容量上限 15m K线 5%
-> 状态: ✅ 工程框架确认 / 📌 策略决议 **Halt & Archive（暂停并归档）**
+> **状态**: ⚠️ 已归档 — 工程框架经 5 轮机构级审计 PASS，策略决议 Halt & Archive（月频双低 Top10 风险调整后不优于 511380 ETF：超额 +2.44pp 但 Sharpe 0.91 < 0.95）
+> **多维标签**: research_status=rejected · oos_scope=none · reproducibility=none · data_availability=private · code_review=passed · execution_validation=partial
 
 ## 已确认结论
 

@@ -3,7 +3,8 @@
 > 来源: 本项目 quant_conclusion 延伸研究（iFinD MCP 数据实测，2026-08-01）
 > 关联已确认结论: [可转债双低 PIT 策略](./double_low_pit_research.md)（月频双低 Top10 超额 +2.44pp 但 Sharpe 0.91 < ETF 0.95 → Halt & Archive；511380 为最优底仓）；[风格中性化指数增强](../STOCK/style_neutralized_index_enhancement.md)（MA20 三档风控）
 > 验证方式: iFinD `bond_special_data` + `bond_market_data` 实测 10 只大盘转债双低快照
-> 状态: 框架设计 ⚠️ 未验证（待回测）
+> **状态**: 🔬 探索中 — 跨资产轮动框架设计，待回测验证
+> **多维标签**: research_status=exploratory · oos_scope=none · reproducibility=none · data_availability=private · code_review=not_reviewed · execution_validation=none
 
 ## 动机
 

@@ -3,7 +3,8 @@
 > 来源: `quant_conclusion/factor_dic/Workbook1.csv`（600+ 高频因子字典，按 Fitness 排序，2026-07-25 版）
 > 关联已确认结论: [风格中性化指数增强](./style_neutralized_index_enhancement.md)、[筹码边际与资金流互补](./chip_moneyflow_complement.md)、[新闻情绪温度计](./news_sentiment_timing.md)
 > 验证方式: 本地日频行情（data_day1）+ tushare（股东户数/指数权重）+ iFinD MCP（实时行情/新闻）
-> 状态: 策略设计 ⚠️（首批日频可验证因子族）
+> **状态**: ⚠️ 候选 — 21 因子统计检验完成（含 2026-08-06 MaxDD 口径修正），候选因子（turnover_vol_20 等）待冻结后独立 OOS 与多重检验控制
+> **多维标签**: research_status=validated · oos_scope=none · reproducibility=partial · data_availability=private · code_review=not_reviewed · execution_validation=partial
 >
 > **2026-08-06 MaxDD 口径修正**：上游脚本 `run_validation.py` / `combo_backtest.py` 原用绝对回撤 `(cummax-nav).max()`，对净值曾翻倍再腰斩的组合会系统性高估（可 >100%）。已改为相对回撤 `(cummax-nav)/cummax` 并加 `nav>0` / `0≤MaxDD≤1` invariant 断言。**原"MaxDD>100%"是公式失真，非净值转负（nav 恒>0）**。实测修正值：lg_net_5d **64.6%**、illiq_money_20 **67.5%**；两因子结论方向不变（仍为弱/无效）。
 

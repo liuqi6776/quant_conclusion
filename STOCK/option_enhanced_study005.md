@@ -3,7 +3,8 @@
 > 来源仓库: [liuqi6776/quant-system](https://github.com/liuqi6776/quant-system)
 > 验证方式: **独立复核**——本地重跑 `research/期权/backtest_options_model.py`（读 `research/study_005_1d_advanced/` features/predictions 重新物理清算）
 > 验证区间: 2022-2026 全周期
-> 状态: ❌ 已证伪（**独立重跑全周期为负**：Option Full Sharpe -0.70 / Baseline -0.68，声称的 Sharpe 3.08 无法复现；详见下方"独立复核结果"）
+> **状态**: ❌ 已证伪 — 独立重跑全周期为负（Option Full Sharpe -0.70 / Baseline -0.68），声称的 Sharpe 3.08 无法复现
+> **多维标签**: research_status=rejected · oos_scope=none · reproducibility=partial · data_availability=private · code_review=not_reviewed · execution_validation=partial
 
 ## ⚠️ 独立复核结果（2026-08，结论推翻）
 

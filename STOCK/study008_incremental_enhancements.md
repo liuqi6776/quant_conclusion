@@ -8,7 +8,10 @@
 
 ## 状态
 
-✅ 已确认基线（BASE+VAL 4 因子等权 ≥0.93 为当前框架强局部最优）+ ❌ 六条增强路径全部证伪/不占优 + ✅ 数据端核验通过
+- **基线（BASE+VAL 4 因子等权 ≥0.93）**: ⚠️ 候选 — 样本内 walk-forward 强局部最优，未做冻结后独立 OOS / 多重检验控制
+  - 多维标签: research_status=validated · oos_scope=none · reproducibility=partial · data_availability=private · code_review=not_reviewed · execution_validation=partial
+- **六条增量路径**: ❌ 已证伪 — 全部无增量/不占优/过拟合（负结果，相对稳健）
+- **数据端核验（PIT）**: ✅ 通过 — 0 前视 / 重述 0.00% / 覆盖 99.7%（数据管道质量核验，非策略收益验证）
 
 ## 已确认基线（✅）
 

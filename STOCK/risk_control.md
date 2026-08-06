@@ -3,7 +3,8 @@
 > 脚本（上游源码）: `research/factor_dic/risk_control_bt.py`（结果: `research/factor_dic/results/risk_control_bt.txt`, 图: `results/risk_control_nav.png`）；补充方向 `risk_control_bt2.py`（结果: `results/risk_control_bt2.txt`, 图: `results/risk_control_nav2.png`）；验证 `walk_forward_bt.py`（结果: `results/walk_forward_bt.txt`, 图: `results/walk_forward_nav.png`）；**本仓库归档: `scripts/risk_control/`（脚本+结果同目录）**
 > 框架: BASE+VAL (ret_1m+ivol+turn+VAL) + RS12 择时, 中证1000 Top50 月度调仓, 20bps 双边, 2020-01~2026-06
 > 风控方式: 日频仓位系数 w 叠加在月度持有期上, 降仓部分按现金(0收益)缓冲; RS12 弱时持 512100 ETF
-> 状态: ⚠️ 核心回测逻辑已通过五轮静态审计（2026-08-03）；保持 ⚠️ 的原因是私有数据与上游 research/factor_dic 环境无法外部独立复现，而非已上传代码存在严重逻辑错误
+> **状态**: ⚠️ 候选 — 风控层有跨期支持（2018-2019 ETF/指数 MA20 OOS 降回撤迹象），完整策略 OOS 未验证，私有数据无法外部独立复现
+> **多维标签**: research_status=validated · oos_scope=component_only · reproducibility=none · data_availability=private · code_review=passed · execution_validation=partial
 
 ## 修复记录（2026-08-03，五轮审查）
 

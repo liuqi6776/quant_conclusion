@@ -2,7 +2,8 @@
 
 > 来源仓库: [liuqi6776/quant-research](https://github.com/liuqi6776/quant-research) / etf-options-research
 > 覆盖标的: 上证50ETF(510050)、沪深300ETF(510300/159919)、中证500ETF(510500/159922)、科创50ETF(588000)、创业板ETF(159915)、深证100ETF(159901)
-> 状态: ⚠️ 大部分未验证（README 自述"大部分结论未通过严格回测验证"）
+> **状态**: ⚠️ 候选 — 少量结论已回测（如均值回归默认参数无效），大部分未通过严格回测验证
+> **多维标签**: research_status=exploratory · oos_scope=none · reproducibility=partial · data_availability=private · code_review=not_reviewed · execution_validation=none
 
 ## 已确认结论
 
