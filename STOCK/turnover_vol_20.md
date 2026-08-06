@@ -35,6 +35,20 @@
 
 > 对照：`csad_std_21`(ρ=0.907)、`volume_surge_vol`(ρ=0.944) 均为 ivol 翻版，**无增量**。`turnover_vol_20` 是 21 因子中唯一与现有低波/反转因子正交的增量。
 
+### 多重检验控制（2026-08-06，审查 P0-3 补充）
+
+> 脚本: `research/experiments/exp_factor_multiplicity/run.py`，完整数据: `multiplicity_report.json`
+
+| 检验 | 结果 | 判定 |
+|---|---|---|
+| BH-FDR (21 因子) | q = 9.4e-12 | ✅ 校正后仍显著 |
+| Bonferroni (21 因子) | p = 1.9e-11 | ✅ 校正后仍显著 |
+| NW lag 敏感性 (HAC t) | 6.66 (lag0) → 7.17 (lag4) → 8.51 (lag19) | ✅ lag 稳健 |
+| IC 自相关 (Ljung-Box 4/8/12) | p = 0.72 / 0.95 / 0.67 | ✅ 无自相关，lag=4 充分 |
+| DSR (Bailey-López de Prado, N=21) | 1.000 | ✅ 通过（IC 序列近似） |
+
+**结论**: 多重检验不构成对 turnover_vol_20 IC 信号的威胁——它是 21 因子候选中经双重校正、lag 稳健性、自相关诊断后仍最强的一档。剩余不确定性集中在: (a) N=21 仅为因子 IC 检验一层自由度，组合路径等未纳入; (b) IC 层显著 ≠ 组合层 alpha（主组合全期仍跑输基准）; (c) 尚未做冻结后独立 OOS。
+
 ## 四、合并回测（现有池 + turnover_vol_20）
 
 | 路径 | 组合变化 | ICIR | 年化 | 超额 |
