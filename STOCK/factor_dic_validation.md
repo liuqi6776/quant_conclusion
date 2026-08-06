@@ -291,8 +291,10 @@ turnover_vol_20：IC-SR≈0.75（月频 IC 序列近似）、skew=0.57、kurt=2.
 ### 10.1 机制
 
 - 对 4 个数据源（daily / index_weight / index_daily / factor_data）生成轻量指纹 + 全量 sha256（full 模式逐文件 `{sha256, size, mtime}`）；
-- 实验运行前对比基线：**仅新增文件 → `[DATA-UPDATE]` 提示不阻断**；**既有文件内容变化/缺失 → `[DATA-DRIFT]` 退出码 2 阻断**，必须重建快照后才允许运行；
-- 日常检测用 size/mtime 快速跳过未变文件，异常才 sha256 核验，运行开销≈0。
+- **快照 ID 与历史保留（2026-08-06 复审治理）**：每次生成 `snapshots/data_manifest_<id>.json`（`id = data_YYYYMMDD-vN`），**历史快照永不覆盖**；`data_manifest.json` 仅作指针 `{snapshot_id, manifest_sha256, path}`（快照文件自身哈希核验防篡改/损坏）；实验结果绑定 `data_snapshot + manifest_sha256 + upstream_commit`（见 `actual_metrics.json`）；
+- 实验运行前对比活动快照：**仅新增文件 → `[DATA-UPDATE]` 提示不阻断**；**既有文件内容变化/缺失 → `[DATA-DRIFT]` 退出码 2 阻断**；
+- 日常检测用 size/mtime 快速跳过未变文件，异常才 sha256 核验，运行开销≈0；
+- **漂移处理流程（勿直接改期望值硬过）**：停实验 → 生成新快照 → 重跑全部实验 → old-vs-new 指标差异 → 人工批准结论升级/降级。
 
 ### 10.2 数据漂移实证（为什么必须做）
 
@@ -308,7 +310,7 @@ turnover_vol_20：IC-SR≈0.75（月频 IC 序列近似）、skew=0.57、kurt=2.
 
 ### 10.3 复现约定
 
-1. 运行实验前：`make_data_manifest.py`（数据有更新时重建基线）；
-2. 运行实验：`exp_*_run.py`，输出 `actual_metrics.json` + `environment.lock.json`（记录 python/依赖/上游 commit）；
-3. 指标不匹配退出码 1，数据漂移退出码 2——**两条路径都禁止"改期望值硬过"**；
-4. 结论库文档的每个数字，须能由上述实验复现（已复现: turnover_vol_20 2026-08-06 全量 PASS）。
+1. 运行实验前：`make_data_manifest.py`（数据有更新时生成**新快照**，历史保留，不覆盖旧快照）；
+2. 运行实验：`exp_*_run.py`，输出 `actual_metrics.json`（绑定 `data_snapshot` + `manifest_sha256` + `upstream_commit`）+ `environment.lock.json`（记录 python/依赖/上游 commit）；
+3. 指标不匹配退出码 1，数据漂移退出码 2——**两条路径都禁止"改期望值硬过"**；跨快照运行时代码一致仅打印 `[WARN]`，数字归属以 `data_snapshot` 为准；
+4. 结论库文档的每个数字，须注明 `data_snapshot` 并可由上述实验复现（已复现: turnover_vol_20 @ data_20260806-v1，2026-08-06 全量 PASS）。
