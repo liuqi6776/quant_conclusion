@@ -13,7 +13,7 @@
 | ❌ 已证伪 | 经过验证后确认无效的假设（负结果同样重要，避免重复踩坑） |
 | 🔬 探索中 | 尚未完成验证，仅记录方向 |
 
-> ⚠️ 现状（2026-08 审查后）：**当前仓库不存在 ✅ 可用结论**。原因：无自动回归测试、数据/代码不可独立复现、研究选择过程未做多重检验控制。所有正向结论均为 ⚠️ 候选，按多维标签判断证据强度。
+> ⚠️ 现状（2026-08 审查后）：**当前仓库不存在 ✅ 可用结论**。原因：无自动回归测试、数据/代码不可独立复现、**仅 21 因子 IC 层做了多重检验（BH-FDR/Bonferroni/DSR），完整研究选择过程未控制**。所有正向结论均为 ⚠️ 候选，按多维标签判断证据强度。
 
 ### 可用准入五条（全部满足才可标 ✅）
 
@@ -46,12 +46,12 @@
   - [新闻情感与股价预测（news_stock_research）](./STOCK/news_sentiment_prediction.md) — ❌ 已证伪（显著性检验未通过）
   - [筹码边际因子与主力资金流互补（iFinD 实测）](./STOCK/chip_moneyflow_complement.md) — ⚠️ 候选（因子 IC 显著，独立 alpha 温和，建议作过滤因子）
   - [新闻情绪温度计辅助择时（设计）](./STOCK/news_sentiment_timing.md) — 🔬 探索中
-  - [因子字典 21 因子验证（factor_dic）](./STOCK/factor_dic_validation.md) — ⚠️ 候选（统计检验完成，含 MaxDD 口径修正；候选因子待冻结后独立 OOS）
-  - [特质换手波动率 turnover_vol_20](./STOCK/turnover_vol_20.md) — ⚠️ 候选（ICIR 0.76 统计显著；无独立 OOS、无多重检验控制，主组合全期跑输基准）
+  - [因子字典 21 因子验证（factor_dic）](./STOCK/factor_dic_validation.md) — ⚠️ 候选（统计检验 + 21 因子 IC 层多重检验完成；候选因子待冻结后独立 OOS）
+  - [特质换手波动率 turnover_vol_20](./STOCK/turnover_vol_20.md) — ⚠️ 候选（ICIR 0.750；21 因子 IC 层已做多重检验；无独立 OOS，完整选择过程未控制，主组合全期跑输基准）
   - [市场状态研究（regime_study）](./STOCK/regime_study.md) — ⚠️ 候选（描述性研究，供因子理解与择时参考）
   - [风格因子增量（style_factors）](./STOCK/style_factors.md) — ⚠️ 候选（样本内价值系显著增量；无独立 OOS）
   - [WorldQuant Alpha101 因子验证](./STOCK/alpha101_factors.md) — ❌ 已证伪（月频下无增量）
-  - [study_008 增量增强路径验证（quant_system_v2）](./STOCK/study008_incremental_enhancements.md) — ⚠️ 基线候选（样本内强局部最优）/ ❌ 六条增量路径全部证伪 / ✅ PIT 数据端核验通过
+  - [study_008 增量增强路径验证（quant_system_v2）](./STOCK/study008_incremental_enhancements.md) — ⚠️ 基线候选（样本内强局部最优）/ ❌ 六条增量路径全部证伪 / ✅ PIT 数据端核验通过（工程核验，非策略可用性）
 - [ETF](./ETF/README.md)
   - [A股ETF期权 Max Pain 研究（quant-research）](./ETF/max_pain_etf_options.md) — ⚠️ 候选（少量结论已回测，大部分未验证）
 - [可转债 CB](./CB/README.md)
