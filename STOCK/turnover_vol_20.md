@@ -5,6 +5,7 @@
 > 验证区间: 2020-01 ~ 2026-06，中证1000 成分股，月频截面，未来 20 日收益
 > **状态**: ⚠️ 候选 — 统计显著的正交增量因子（ICIR 0.76 / NW t 6.93），但未做冻结后独立 OOS 与多重检验控制，主组合全期仍跑输基准
 > **多维标签**: research_status=validated · oos_scope=none · reproducibility=partial · data_availability=private · code_review=not_reviewed · execution_validation=partial
+> **⚠️ 数据漂移注记（2026-08-06）**: 本文数字对应 **2026-06 数据快照**。2026-07 快照（含 2026-07-31 调仓日，`research/experiments/exp_turnover_vol_20/` 可复现）下 ICIR 0.750 / NW t 7.15 / MaxDD 28.8% / 超额 +50.0%（基准 000852 nav 1.4997→1.2416，基准序列被更新）。结论方向（正交增量、主组合跑输基准）不变，但绝对数字不可跨快照引用。
 
 ## 一、因子定义
 

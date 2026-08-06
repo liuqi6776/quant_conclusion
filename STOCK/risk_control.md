@@ -5,6 +5,7 @@
 > 风控方式: 日频仓位系数 w 叠加在月度持有期上, 降仓部分按现金(0收益)缓冲; RS12 弱时持 512100 ETF
 > **状态**: ⚠️ 候选 — 风控层有跨期支持（2018-2019 ETF/指数 MA20 OOS 降回撤迹象），完整策略 OOS 未验证，私有数据无法外部独立复现
 > **多维标签**: research_status=validated · oos_scope=component_only · reproducibility=none · data_availability=private · code_review=passed · execution_validation=partial
+> **⚠️ 数据漂移注记（2026-08-06）**: 本文数字对应 **2026-06 数据快照**。2026-07 快照（含 2026-07-31 调仓日，`research/experiments/exp_ma20_risk_control/` 可复现）下 **+MA20三档098 年化 16.04%→13.83%，已低于无风控 BASE+VAL 14.44%**（旧快照为 16.04% vs 15.12%），**"MA20 fixed 0.98 提升收益"结论方向反转，仅回撤改善成立**（18.36% vs 20.34%）。根因：基准 512100/000852 序列更新 + 数据滚动。使用本数字前先核对数据快照。
 
 ## 修复记录（2026-08-03，五轮审查）
 
