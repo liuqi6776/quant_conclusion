@@ -57,6 +57,9 @@
 - [可转债 CB](./CB/README.md)
   - [可转债双低 PIT 策略研究（CB_research）](./CB/double_low_pit_research.md) — ⚠️ 已归档（工程框架 5 轮审计 PASS；策略决议 Halt & Archive）
   - [双低池跨资产轮动框架（设计）](./CB/double_low_rotation.md) — 🔬 探索中
+- [场外基金 FUND](./FUND/README.md)
+  - [场外基金稳健组合：低相关分散 + 量化/AI 增强（quant_system_v2）](./FUND/otc_fund_stable_portfolio.md) — ⚠️ 候选（完整回测含费用模型；权重迭代选择、无独立 OOS、数据本地私有）
+  - [基金研究教训汇总：4433/择时/凯利/低相关分散/再平衡](./FUND/otc_fund_lessons.md) — ⚠️ 候选（多结论文档，含 ❌ 证伪子项与 🔬 探索方向）
 
 ## 使用规则
 
