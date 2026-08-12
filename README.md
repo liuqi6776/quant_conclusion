@@ -46,7 +46,8 @@
   - [期权增强型全局策略 Study 005（quant-system）](./STOCK/option_enhanced_study005.md) — ❌ 已证伪（Sharpe 3.08 无法复现）
   - [新闻情感与股价预测（news_stock_research）](./STOCK/news_sentiment_prediction.md) — ❌ 已证伪（显著性检验未通过）
   - [筹码边际因子与主力资金流互补（iFinD 实测）](./STOCK/chip_moneyflow_complement.md) — ⚠️ 候选（因子 IC 显著，独立 alpha 温和，建议作过滤因子）
-  - [新闻情绪温度计辅助择时（设计）](./STOCK/news_sentiment_timing.md) — 🔬 探索中
+  - [新闻情绪温度计辅助择时（设计）](./STOCK/news_sentiment_timing.md)
+  - [股票精选前视修复审计 + V5-BEST 结论（quant_system_v2）](./STOCK/stock_picking_v5_fixed.md) — ✅ V5-BEST 年化24.8%/回撤-24.4%；⚠️ 旧 V6-S1 37.2% 前视作废 — 🔬 探索中
   - [因子字典 21 因子验证（factor_dic）](./STOCK/factor_dic_validation.md) — ⚠️ 候选（统计检验 + 21 因子 IC 层多重检验完成；候选因子待冻结后独立 OOS）
   - [特质换手波动率 turnover_vol_20](./STOCK/turnover_vol_20.md) — ⚠️ 候选（ICIR 0.750；21 因子 IC 层已做多重检验；无独立 OOS，完整选择过程未控制，主组合全期跑输基准）
   - [市场状态研究（regime_study）](./STOCK/regime_study.md) — ⚠️ 候选（描述性研究，供因子理解与择时参考）
