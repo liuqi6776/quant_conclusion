@@ -278,6 +278,13 @@ def run_strategy_v6(global_top_k=3,
                     preferred_weight=1.2,
                     pe_pct_thr=PE_PCT_THR,
                     verbose=False):
+    # ===== 前视修复：T月数据选股 → T+1月首个交易日执行 =====
+    # 原版用当月月末截面选股并在当月月初买入，带入了整月未来信息。
+    # 修复：选股结果全部存到【下个月】的 key，执行时仍按当月 key 买入。
+    def _next_month(ym_int):
+        y, m = ym_int // 100, ym_int % 100
+        return (y + 1) * 100 + 1 if m == 12 else y * 100 + m + 1
+
     ym_to_dt = {}
     for ym_dt in sorted(ml_scored["dt"].unique()):
         ym_int = ym_dt.year * 100 + ym_dt.month
@@ -288,22 +295,22 @@ def run_strategy_v6(global_top_k=3,
 
     for ym_int in yms_unique:
         if ym_int not in sect_signal:
-            monthly_picks[ym_int] = []; continue
+            monthly_picks[_next_month(ym_int)] = []; continue
         sig = sect_signal[ym_int]
         undv_secs = [s for s, v in sig.items() if v < pe_pct_thr]
         if not undv_secs:
-            monthly_picks[ym_int] = []; continue
+            monthly_picks[_next_month(ym_int)] = []; continue
         if ym_int not in ym_to_dt:
-            monthly_picks[ym_int] = []; continue
+            monthly_picks[_next_month(ym_int)] = []; continue
         dt_real = ym_to_dt[ym_int]
         sub = ml_scored[ml_scored["dt"] == dt_real].copy()
         if len(sub) == 0:
-            monthly_picks[ym_int] = []; continue
+            monthly_picks[_next_month(ym_int)] = []; continue
         sub["sects"] = sub["ts_code"].map(lambda c: code_info.get(c, {}).get("sectors", []))
         sub["in_undv"] = sub["sects"].apply(lambda lst: any(s in undv_secs for s in lst))
         sub = sub[sub["in_undv"]].copy()
         if len(sub) == 0:
-            monthly_picks[ym_int] = []; continue
+            monthly_picks[_next_month(ym_int)] = []; continue
 
         N0 = len(sub)
         # ====== 以下为【硬过滤】（只挑覆盖率高的指标） ======
@@ -347,7 +354,7 @@ def run_strategy_v6(global_top_k=3,
         if verbose and len(sub) > 0:
             print(f"  ym={ym_int} 硬过滤: N0={N0}→次新后N1={N1}→筹码后N2={N2}→大盘后N3={N3}")
         if len(sub) == 0:
-            monthly_picks[ym_int] = []; continue
+            monthly_picks[_next_month(ym_int)] = []; continue
 
         # ====== 以下为【软加分】（PEG/ROE不靠硬过滤，靠加分减分体现偏好） ======
         sub["_peg_bonus"] = 0.0
@@ -395,7 +402,7 @@ def run_strategy_v6(global_top_k=3,
             def get_name(c): return code_info.get(c, {}).get("name", c)
             names = [get_name(c) for c in chosen]
             print(f"    → 选中={names}, 行业分布={sec_count}")
-        monthly_picks[ym_int] = chosen
+        monthly_picks[_next_month(ym_int)] = chosen
 
     # ---------- 日频执行 ----------
     cash = float(INIT)

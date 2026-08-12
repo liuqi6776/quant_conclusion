@@ -1,26 +1,28 @@
-# 股票精选前视修复审计 + V5-BEST 最终结论（quant_system_v2）
+# 股票精选前视修复审计 + V5-BEST 结论（quant_system_v2）
 
 > - **来源仓库**：`quant_system_v2`（research/sector_rotation）
-> - **验证方式**：前视 bug 修复（T 月末数据选股 → T+1 月执行）+ 432 组网格搜索（2020-2024 训练 + 2025 样本外验证）+ 全期回测 + 与无前视策略及纯 ETF 基准同期对比
-> - **验证区间**：2020-01-01 ~ 2025-12-31（6 年，1477 个交易日；网格搜索：2020-01~2024-12 训练，2025-01~2025-12 验证）
+> - **验证方式**：前视 bug 修复（T 月末数据选股 → T+1 月执行）+ 432 组网格搜索（2020-2024 训练 + 2025 半样本外验证）+ 全期回测 + 与无前视策略及纯 ETF 基准同期对比
+> - **验证区间**：2020-01-01 ~ 2025-12-31（6 年，1477 个交易日；网格搜索：2020-01~2024-12 训练，2025-01~2025-12 半样本外验证）
 > - **数据**：与 `sector_stock_picking.md` 相同（个股 ML 特征面板 72 月 + 日频估值/换手/市值 + 申万行业 PE）；买入费 0.10% / 卖出费 0.15%
 > - **结论有效期**：月度调仓的量价+估值信号，建议 6-12 个月后复检
 > - **前置文档**：⚠️ [`sector_stock_picking.md`](./sector_stock_picking.md) 中的 V6-S1（年化 37.2%）含**前视 bug**，已作废，以本文档为准
 
 ## 状态
 
-- **V5-BEST（Top3 + ROE≥12% + PEG<2 + 筹码前50% + 市值50亿起 + 上市满3年）**: ✅ 已确认（前视修复 + 2025 样本外验证通过 + 对全部基准跑赢）
-  - 多维标签: research_status=validated · oos_scope=2025 单年（冻结） · reproducibility=partial · data_availability=private · code_review=reviewed · execution_validation=partial
+- **V5-BEST（Top3 + ROE≥12% + PEG<2 + 筹码前50% + 市值50亿起 + 上市满3年）**: ⚠️ 候选 — 前视修复已实施、2025 半样本外验证通过、对全部基准跑赢，但无冻结后独立 OOS、研究选择过程未做多重检验控制、数据为本地私有、幸存者偏差/换手率口径/ROE 覆盖率偏差待检验
+  - 多维标签: research_status=validated · oos_scope=2025 半样本外（参与选优） · reproducibility=partial · data_availability=private · code_review=reviewed · execution_validation=partial
 - **原 V6-S1 年化 37.2% 结论**: ❌ 已证伪（前视 bug：选股用当月月末数据、当月月初执行，带入整月未来信息；修复后年化仅 5.0%）
 - **原 v4-A3 年化 30.4%~35.5% 结论**: ❌ 已证伪（同一前视 bug；修复后年化 6.5%）
 
 ## 一句话结论
 
 > 前视修复后，**真实选股 alpha 来自质量硬过滤而非软评分**：网格搜索得到的最优配置 **V5-BEST（Top3 + ROE≥12% + PEG<2 + 筹码前 50% + 流通市值 50-2000 亿 + 上市满 3 年）**，全期 **年化 24.8%、期末净值 3.70、最大回撤 -24.4%、夏普 0.97**，显著跑赢同类无前视策略（V6-S2 16.2%、v4-A3 修复 6.5%）与纯 ETF 基准（中证1000ETF 7.6%、沪深300ETF 4.5%），最接近的基准为全行业等权（17.5%/-19.3%）。
+>
+> ⚠️ **注意**：2025 验证集参与了 432 组配置的选优（筛选准则为"训练夏普×验证夏普"），不是 held-out OOS；真正的独立 OOS 从冻结后的前向跟踪开始。
 
 ## 前视审计（为什么旧结论作废）
 
-审查发现 `backtest_stock_picking_v6.py` 存在致命前视：**选股用 T 月月末数据计算评分，却在 T 月月初买入**，等于每次调仓都偷看了当月整月行情。修复方式：评分结果存入 `_next_month(ym_int)` 对应的下月 key，执行仍按当月 key 读取，实现"T 月数据 → T+1 月首个交易日执行"。
+审查发现 `backtest_stock_picking_v6.py` 和 `backtest_stock_picking_v5.py` 存在致命前视：**选股用 T 月月末数据计算评分，却在 T 月月初买入**，等于每次调仓都偷看了当月整月行情。修复方式：评分结果存入 `_next_month(ym_int)` 对应的下月 key，执行仍按当月 key 读取，实现"T 月数据 → T+1 月首个交易日执行"。
 
 | 策略 | 修复前（虚高） | 修复后（真实） | 说明 |
 |---|---|---|---|
@@ -30,6 +32,13 @@
 
 **修复后 v5 系列反而成为最优**：ROE/PEG/筹码的硬质量过滤是真实 alpha，不是前视幻觉；v6 的"软评分+中位数回补"思路在前视修复后失去优势。
 
+### 修复代码定位
+
+修复核心是 `_next_month(ym_int)` 函数 + `monthly_picks[_next_month(ym_int)] = chosen`（选股结果存到下月 key）：
+- `backtest_stock_picking_v5.py` 第 346 行定义 `_next_month`，第 477 行使用
+- `backtest_stock_picking_v6.py` 第 284 行定义 `_next_month`，第 398 行使用
+- `v4a3_fixed_compare.py` 第 166 行 `run_v4a3(shift=True)`，第 168 行定义 `_next_month`，第 181 行 `k = _next_month(ym_int)`
+
 ## V5-BEST 设计（网格搜索最优）
 
 - 板块择时：申万二级行业 PE **48 月滚动分位** < 30% 进入低估池（黑名单板块剔除）
@@ -37,6 +46,7 @@
 - **持仓**：低估池内评分排序取 **Top3**，最多 2 只同板块
 - **退出**：止盈 +30% / 时间止损 270 天
 - 网格搜索：2020-2024 训练（60 月）+ 2025 验证（12 月），432 组配置按"训练夏普×验证夏普"筛选；ROE12 训练略弱但验证爆发（+46%，夏普 2.12），ROE8 训练强但验证全亏 → **质量过滤是样本外稳健解**；Top3 优于 Top5/8、市值 50 亿优于 100 亿、上市 3 年优于 2 年
+- ⚠️ **2025 验证集参与了选优**，不是 held-out OOS；"ROE12 验证爆发"可能是验证集过拟合信号（单年 12 个月选出夏普 2.12），真正的判定需等冻结后前向跟踪
 
 ## 同期对比（2020-01 ~ 2025-12，72 个月月度净值）
 
@@ -58,10 +68,12 @@
 ## 复现指引（给 reviewer）
 
 ### 代码（`scripts/sector_stock/`）
+- `backtest_stock_picking_v5.py` — v5 引擎（**含 `_next_month` 前视修复**，第 346/477 行）
+- `backtest_stock_picking_v6.py` — v6 引擎（**含 `_next_month` 前视修复**，第 284/398 行）
+- `v4a3_fixed_compare.py` — v4-A3 近似重建对照（`shift=True` 为修复版，第 166/181 行）
 - `v5_grid_search.py` — 432 组网格搜索（2020-2024 训练 + 2025 验证）
-- `v5_best_backtest.py` — V5-BEST 最优参数全区间回测（输出净值/回撤/选股明细）
-- `v5_compare_benchmarks.py` — 与无前视策略 + 纯 ETF + 全行业等权同期对比（输出 `v5_vs_benchmarks_monthly.csv` + `v5_vs_benchmarks.png`）
-- 旧脚本（含前视 bug，仅作审计对照）：`backtest_stock_picking_v6.py` / `backtest_stock_picking_v5.py` / `backtest_stock_picking.py`
+- `v5_best_backtest.py` — V5-BEST 最优参数全区间回测（exec 复用 v5 修复版引擎）
+- `v5_compare_benchmarks.py` — 与无前视策略 + 纯 ETF + 全行业等权同期对比（exec 复用 v6 修复版引擎）
 
 ### 图
 - `v5_best_nav_2020_2026.png` — V5-BEST 净值/回撤曲线
@@ -73,11 +85,13 @@
 - ETF 日线：`research/chip_momentum/data/index_daily/512100.SH.parquet`、`510300.SH.parquet`
 
 ## 局限与风险
-1. **OOS 仅 2025 单年**：网格参数在 2020-2024 训练、2025 验证，验证期较短；2027-2032 独立区间尚未到来，仍需冻结后实盘验证。
+1. **OOS 仅 2025 单年且参与选优**：网格参数在 2020-2024 训练、2025 验证，但验证集参与了 432 组配置的选优（筛选准则为"训练夏普×验证夏普"），不是 held-out。真正的独立 OOS 从冻结后的前向跟踪才开始。2027-2032 独立区间尚未到来。
 2. **研究选择过程未做多重检验控制**（FDR / Deflated Sharpe / 冻结验证集），网格搜索"最优组"存在选择偏差，需警惕。
 3. **数据不可独立复现**：私有本地数据；reproducibility=partial。
 4. **执行层部分验证**：含双边费用与 100 股整数手约束，未模拟涨跌停买不进/卖不出、停牌、滑点、容量冲击；Top3 集中度下单票风险需按账户复核。
-5. **ROE/PEG 覆盖率仅 17%**：硬过滤 + 覆盖率低的矛盾在本配置中靠"过滤而非排序"规避（未入库公司直接被踢），但可能漏掉优质但数据缺失的公司。
+5. **ROE/PEG 覆盖率仅 17%**：硬过滤 + 覆盖率低的矛盾在本配置中靠"过滤而非排序"规避（未入库公司直接被踢），但可能漏掉优质但数据缺失的公司。⚠️ **数据可得性偏差从未被检验**——策略只在"有财务数据入库的 17% 股票"里选股，这个偏差本身可能就是"alpha"的来源。
+6. **幸存者偏差**：1986 只股票池 + 用当前名称静态过滤 ST/退市，退市股全程不存在——已识别但未处理。
+7. **换手率口径**：`min_turnover_pct` 标称"月换手率"，实际仍是日频快照的日换手率——已识别但未修正。
 
 ## 参考
 - 详细过程与网格中间结果：`quant_system_v2/research/sector_rotation/`（v5_grid_search.py / v5_best_backtest.py / v5_compare_benchmarks.py / backtest_stock_picking_v6.py）

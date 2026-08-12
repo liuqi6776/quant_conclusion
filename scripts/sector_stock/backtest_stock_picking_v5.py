@@ -19,7 +19,7 @@
   7) 【赛道聚焦】白名单仅保留：能源/材料/制造/工业/医药/消费等胜率高的赛道
   8) 止盈30%、时间止损270天、买入0.1%/卖出0.15%（同v4可比基准）
 """
-import os, glob, time, calendar
+import os, sys, glob, time, calendar
 import numpy as np
 import pandas as pd
 
@@ -30,6 +30,13 @@ OUT_DIR = os.path.join(ROOT, "research", "sector_rotation", "results")
 ML_PANEL = os.path.join(ROOT, "research", "sector_rotation", "stock_ml_panel_72m.parquet")
 IND_PARQ = os.path.join(DATA, "industry1", "industry.parquet")
 OTHER_DAY_DIR = os.path.join(DATA, "other_day1")
+
+# s123 择时 + V8 避险（复用 GBDT 引擎的信号源）
+_TD_DIR = os.path.join(ROOT, "research", "fund_research", "studies", "rotation_dingtou")
+if _TD_DIR not in sys.path:
+    sys.path.insert(0, _TD_DIR)
+from timing_dingtou import fetch_pe_csi300, fetch_bond10y, _rolling_pct, _zscore
+from etf_optimize_backtest2 import load_hv_daily
 
 t00 = time.time()
 
@@ -285,6 +292,38 @@ TP = 0.30
 MAX_HOLD = 270
 PE_PCT_THR = 0.30  # PE分位 <30% → 低估
 
+# ============================================================
+# 7.5 s123 择时信号 + V8 避险组合（月度状态机，T-1月信号→T月生效）
+# ============================================================
+def build_s123_v8():
+    """构建月度 s123 信号 与 V8(短债+信用债+黄金) 日净值。
+    返回: (sig_map, v8_nav_series, v8_daily_reindex)
+      sig_map: {ym: s123}
+      v8_daily: Series(index=int YYYYMMDD, 值=当日V8日收益)
+    """
+    pe = fetch_pe_csi300()
+    bond = fetch_bond10y()
+    close_ix = pe["close"]
+    dd_ix = close_ix / close_ix.cummax() - 1.0
+    erp = 1.0 / pe["pe_ttm"] - bond["y10"].reindex(pe.index).ffill()
+    month_keys = sorted(set(int(d.year) * 100 + d.month for d in close_ix.index))
+    sig_rows = []
+    for ym in month_keys:
+        d = pd.Timestamp(f"{ym}01") + pd.offsets.MonthEnd(0)
+        s1 = 1 if _rolling_pct(pe["pe_ttm"], d) < 0.20 else 0
+        s2 = 1 if _zscore(erp, d) > 1.0 else 0
+        s3 = 1 if float(dd_ix.asof(d)) <= -0.25 else 0
+        sig_rows.append({"ym": ym, "s123": s1 + s2 + s3})
+    sig_df = pd.DataFrame(sig_rows).set_index("ym")
+    v8 = load_hv_daily()
+    all_d = sorted(set().union(*[set(s.index) for s in v8.values()]))
+    v8_df = pd.DataFrame(index=all_d)
+    for code, s in v8.items():
+        v8_df[code] = s.reindex(all_d).astype(float)
+    v8_daily = (v8_df * pd.Series({"511990.SH": 1/3, "511260.SH": 1/3, "518880.SH": 1/3})).sum(axis=1).fillna(0)
+    v8_daily.index = [int(x) for x in v8_daily.index]
+    return sig_df["s123"].to_dict(), v8_daily
+
 def run_strategy_v5(global_top_k=3,             # 低估池内全局TopK
                     max_same_sector=2,           # 最多2只同板块（强制分散）
                     max_pe=60,                   # PE硬上限(0,max_pe]
@@ -299,7 +338,15 @@ def run_strategy_v5(global_top_k=3,             # 低估池内全局TopK
                     chip_conc_pctl_threshold=0.60,  # 筹码集中度截面后40%→剔除（只留前60%）
                     preferred_weight=1.2,        # 白名单板块加分
                     pe_pct_thr=PE_PCT_THR,
+                    use_s123=False,              # 是否叠加 s123 择时状态机
+                    sig_map=None,                # {ym: s123}
+                    v8_daily=None,               # Series<int YYYYMMDD, 日收益>
                     verbose=False):
+    # ===== 前视修复：T月数据选股 → T+1月首个交易日执行 =====
+    def _next_month(ym_int):
+        y, m = ym_int // 100, ym_int % 100
+        return (y + 1) * 100 + 1 if m == 12 else y * 100 + m + 1
+
     ym_to_dt = {}
     for ym_dt in sorted(ml_scored["dt"].unique()):
         ym_int = ym_dt.year * 100 + ym_dt.month
@@ -311,27 +358,27 @@ def run_strategy_v5(global_top_k=3,             # 低估池内全局TopK
 
     for ym_int in yms_unique:
         if ym_int not in sect_signal:
-            monthly_picks[ym_int] = []
+            monthly_picks[_next_month(ym_int)] = []
             continue
         sig = sect_signal[ym_int]
         undv_secs = [s for s, v in sig.items() if v < pe_pct_thr]
         if not undv_secs:
-            monthly_picks[ym_int] = []
+            monthly_picks[_next_month(ym_int)] = []
             continue
         if ym_int not in ym_to_dt:
-            monthly_picks[ym_int] = []
+            monthly_picks[_next_month(ym_int)] = []
             continue
         dt_real = ym_to_dt[ym_int]
         sub = ml_scored[ml_scored["dt"] == dt_real].copy()
         if len(sub) == 0:
-            monthly_picks[ym_int] = []
+            monthly_picks[_next_month(ym_int)] = []
             continue
         # ===== 低估板块池内 =====
         sub["sects"] = sub["ts_code"].map(lambda c: code_info.get(c, {}).get("sectors", []))
         sub["in_undv"] = sub["sects"].apply(lambda lst: any(s in undv_secs for s in lst))
         sub = sub[sub["in_undv"]].copy()
         if len(sub) == 0:
-            monthly_picks[ym_int] = []
+            monthly_picks[_next_month(ym_int)] = []
             continue
 
         # ===== v5 强化：硬过滤层（非软评分，不符合直接T出） =====
@@ -388,7 +435,7 @@ def run_strategy_v5(global_top_k=3,             # 低估池内全局TopK
         if verbose and len(sub) > 0:
             print(f"  ym={ym_int} 过滤: 低估池{N0}→次新过滤后{N1}→PEG<{max_peg}后{N2}→ROE≥{min_roe_pct}%后{N3}→筹码Top{chip_conc_pctl_threshold*100:.0f}%后{N4}→大盘市值后{N5}")
         if len(sub) == 0:
-            monthly_picks[ym_int] = []
+            monthly_picks[_next_month(ym_int)] = []
             continue
 
         # ===== 优选加分：PEG < peg_preferred → 额外加分 =====
@@ -427,18 +474,52 @@ def run_strategy_v5(global_top_k=3,             # 低估池内全局TopK
             names = [get_name(c) for c in chosen]
             print(f"  ym={ym_int} 选中={chosen} {names}, 行业={sec_count}, "
                   f"adj_score={[float(sub[sub['ts_code']==c]['score_adj'].iloc[0]) for c in chosen]}")
-        monthly_picks[ym_int] = chosen
+        monthly_picks[_next_month(ym_int)] = chosen
 
     # ---------- 日频执行 ----------
-    cash = float(INIT)
+    # s123 择时模式：state_in=True 持有股票, False 持有V8避险（reserve 按V8日收益滚动）
+    state_in = (not use_s123)
+    cash = float(INIT) if state_in else 0.0
+    reserve = 0.0 if state_in else float(INIT)
     holdings = {}
     nav_series = []; trades = []
+    v8_nav_dt = None
+    if use_s123 and v8_daily is not None:
+        v8d = v8_daily.copy()
+        v8d.index = pd.to_datetime(v8d.index.astype(str), format="%Y%m%d")
+        v8_nav_dt = (1.0 + v8d).sort_index()
 
     for di, day in enumerate(all_dates):
+        # 避险资金按 V8 日收益滚动 (v8_nav_dt 已存为 1+日收益, 直接乘)
+        if (not state_in) and v8_nav_dt is not None:
+            v8r = v8_nav_dt.get(day)
+            if v8r is not None and not np.isnan(v8r):
+                reserve *= v8r
         is_monthly_start = (di == 0) or (all_dates[di-1].month != day.month)
         if is_monthly_start:
             ym_int = day.year * 100 + day.month
-            if ym_int in monthly_picks:
+            # s123 状态机：用 T-1 月信号决定 T 月状态（T月信号当月末才可得，避免前视）
+            if use_s123 and sig_map is not None:
+                prev_ym = ym_int - 1 if ym_int % 100 != 1 else ym_int - 89
+                ps = sig_map.get(prev_ym)
+                if ps is not None:
+                    if (not state_in) and ps >= 3:
+                        state_in = True
+                    elif state_in and ps <= 1:
+                        state_in = False
+                # 状态切换
+                if state_in and reserve > 0:
+                    cash += reserve; reserve = 0.0
+                    trades.append((day, "S123IN", "V8", cash, np.nan, 0))
+                elif (not state_in) and (cash > 0 or holdings):
+                    for c in list(holdings.keys()):
+                        if c in close_panel and day in close_panel[c].index:
+                            p = close_panel[c].loc[day]
+                            reserve += p * holdings[c]["qty"] * (1 - SELL_FEE)
+                        del holdings[c]
+                    reserve += cash; cash = 0.0
+                    trades.append((day, "S123OUT", "V8", reserve, np.nan, 0))
+            if state_in and ym_int in monthly_picks:
                 target = monthly_picks[ym_int]
                 new_codes = [c for c in target if c not in holdings
                              and c in close_panel and day in close_panel[c].index]
@@ -455,21 +536,22 @@ def run_strategy_v5(global_top_k=3,             # 低估池内全局TopK
                         cash -= cost
                         holdings[c] = {"buy_price": p, "qty": qty, "buy_di": di}
                         trades.append((day, "BUY", c, cost, np.nan, 0))
-        # 止盈30% / 时间止损270天
-        for c in list(holdings.keys()):
-            if c not in close_panel or day not in close_panel[c].index:
-                continue
-            p = close_panel[c].loc[day]
-            ret = p / holdings[c]["buy_price"] - 1
-            held = di - holdings[c]["buy_di"]
-            if ret >= TP or held >= MAX_HOLD:
-                proceeds = p * holdings[c]["qty"] * (1 - SELL_FEE)
-                cash += proceeds
-                op = "TP" if ret >= TP else "T270"
-                trades.append((day, op, c, proceeds, ret, held))
-                del holdings[c]
+        # 止盈30% / 时间止损270天（仅在市状态）
+        if state_in:
+            for c in list(holdings.keys()):
+                if c not in close_panel or day not in close_panel[c].index:
+                    continue
+                p = close_panel[c].loc[day]
+                ret = p / holdings[c]["buy_price"] - 1
+                held = di - holdings[c]["buy_di"]
+                if ret >= TP or held >= MAX_HOLD:
+                    proceeds = p * holdings[c]["qty"] * (1 - SELL_FEE)
+                    cash += proceeds
+                    op = "TP" if ret >= TP else "T270"
+                    trades.append((day, op, c, proceeds, ret, held))
+                    del holdings[c]
         # 净值
-        total = cash
+        total = cash + reserve
         for c, h in holdings.items():
             s = close_panel[c]
             up_to = s[s.index <= day]
@@ -536,12 +618,40 @@ configs = [
     ("V5-C1: Top3+PEG<2+ROE≥10%+筹码前50%",   3, 2, 60, 0.5, 100, 2000, 2, 1.5, 10, 0.50, 2, 1.20),
     # ===== 次新股过滤3年（更严） =====
     ("V5-L1: Top3+PEG<2+ROE≥10%+上市满3年",   3, 2, 60, 0.5, 100, 2000, 2, 1.5, 10, 0.60, 3, 1.20),
+    # ===== 修复前视后的优化网格 =====
+    ("V5-O1: Top5+PEG<2+ROE≥12%+大盘100亿",  5, 2, 60, 0.5, 100, 2000, 2, 1.5, 12, 0.60, 2, 1.20),
+    ("V5-O2: Top3+PEG<2+ROE≥15%+大盘100亿",  3, 2, 60, 0.5, 100, 2000, 2, 1.5, 15, 0.60, 2, 1.20),
+    ("V5-O3: Top3+PEG<2+ROE≥12%+同行业≤1",   3, 1, 60, 0.5, 100, 2000, 2, 1.5, 12, 0.60, 2, 1.20),
+    ("V5-O4: Top3+PEG<2+ROE≥12%+筹码前50%",  3, 2, 60, 0.5, 100, 2000, 2, 1.5, 12, 0.50, 2, 1.20),
+    ("V5-O5: Top5+PEG<2+ROE≥12%+同行业≤1",   5, 1, 60, 0.5, 100, 2000, 2, 1.5, 12, 0.60, 2, 1.20),
+    # ===== 优化组合验证（第二轮） =====
+    ("V5-O6: Top6+PEG<2+ROE≥12%+大盘100亿",  6, 2, 60, 0.5, 100, 2000, 2, 1.5, 12, 0.60, 2, 1.20),
+    ("V5-O7: Top5+PEG<2+ROE≥12%+上市满3年",  5, 2, 60, 0.5, 100, 2000, 2, 1.5, 12, 0.60, 3, 1.20),
+    ("V5-O8: Top5+PEG<2+ROE≥12%+大盘150亿",  5, 2, 60, 0.5, 150, 2000, 2, 1.5, 12, 0.60, 2, 1.20),
+    ("V5-O9: Top5+PEG<2+ROE≥12%+筹码前50%",  5, 2, 60, 0.5, 100, 2000, 2, 1.5, 12, 0.50, 2, 1.20),
+    # ===== O9基础上压回撤（第三轮） =====
+    ("V5-O10: Top5+ROE12+筹码50+同行业≤1",   5, 1, 60, 0.5, 100, 2000, 2, 1.5, 12, 0.50, 2, 1.20),
+    ("V5-O11: Top5+ROE12+筹码50+市值80-1500亿",5, 2, 60, 0.5, 80, 1500, 2, 1.5, 12, 0.50, 2, 1.20),
+    ("V5-O12: Top5+ROE12+筹码50+市值100-1500亿",5, 2, 60, 0.5, 100, 1500, 2, 1.5, 12, 0.50, 2, 1.20),
+    ("V5-O13: Top5+ROE12+筹码50+上市满3年",  5, 2, 60, 0.5, 100, 2000, 2, 1.5, 12, 0.50, 3, 1.20),
+    ("V5-O14: Top5+ROE12+筹码50+白名单×1.5", 5, 2, 60, 0.5, 100, 2000, 2, 1.5, 12, 0.50, 2, 1.50),
+    # ===== s123 择时叠加（第四轮：T-1月信号→T月生效） =====
+    ("V5-S1: R2+s123择时 (Top3+ROE12)",     3, 2, 60, 0.5, 100, 2000, 2, 1.5, 12, 0.60, 2, 1.20),
+    ("V5-S2: O9+s123择时 (Top5+ROE12+筹码50)",5, 2, 60, 0.5, 100, 2000, 2, 1.5, 12, 0.50, 2, 1.20),
+    ("V5-S3: O1+s123择时 (Top5+ROE12)",     5, 2, 60, 0.5, 100, 2000, 2, 1.5, 12, 0.60, 2, 1.20),
+    ("V5-S4: O11+s123择时 (市值80-1500亿)", 5, 2, 60, 0.5, 80, 1500, 2, 1.5, 12, 0.50, 2, 1.20),
+    ("V5-S5: K1+s123择时 (Top5+ROE10)",     5, 2, 60, 0.5, 100, 2000, 2, 1.5, 10, 0.60, 2, 1.20),
 ]
 
 res = []
 nav_curves = {}
+_sig_map = None; _v8_daily = None
 for i, cfg in enumerate(configs):
     lb, k, mss, mpe, mto, mncm, mxcm, mpeg, ppeg, mroe, cc_thr, lyrs, pw = cfg
+    use_s123 = "S123" in lb or lb.startswith("V5-S")
+    if use_s123 and _sig_map is None:
+        print("  [s123] 构建信号与V8避险组合...", flush=True)
+        _sig_map, _v8_daily = build_s123_v8()
     t1 = time.time()
     try:
         nv, trs, _ = run_strategy_v5(
@@ -550,7 +660,8 @@ for i, cfg in enumerate(configs):
             min_circ_mv_yi=mncm, max_circ_mv_yi=mxcm,
             max_peg=mpeg, peg_preferred=ppeg,
             min_roe_pct=mroe, chip_conc_pctl_threshold=cc_thr,
-            min_list_years=lyrs, preferred_weight=pw)
+            min_list_years=lyrs, preferred_weight=pw,
+            use_s123=use_s123, sig_map=_sig_map, v8_daily=_v8_daily)
         m = calc_metrics(nv, trs, lb)
     except Exception as e:
         print(f"  [{i+1}/{len(configs)}] {lb}: ERROR {e}")
