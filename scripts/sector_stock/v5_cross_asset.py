@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-跨资产配置测试: 股票Top3 + 债券/黄金(V8避险) 的静态混合
+跨资产配置测试: 股票Top3 + 债券/黄金(V8避险) 的月频再平衡混合
 固定股票端参数 (ROE12/K3/PEG1.5/CHIP50/MV50/YR3, 无择时)
 目标: 看能否在不牺牲太多收益的情况下把回撤压到 -20% 以内
 V8 = 511990(短债) + 511260(信用债) + 518880(黄金) 各1/3
+
+口径统一说明:
+- 净值统一 reindex 到工作日(bdays=freq B) 并 ffill, 与 v5_topk_scan.py 完全一致
+- 指标统一: 年化=CAGR, 回撤=净值最大回撤, 夏普=日收益 mean/std(ddof=1)*sqrt(252), 卡玛=年化/|回撤|
+- 再平衡频率: 月频(每月初重置目标权重, 月内买入持有让权重自然漂移), 而非不现实的日频再平衡
 """
 import os, time
 import numpy as np
@@ -41,12 +46,17 @@ v8_ret = pd.Series(v8_daily).sort_index()
 v8_ret.index = pd.to_datetime(v8_ret.index.astype(str), format="%Y%m%d")
 v8_ret = v8_ret[v8_ret.index >= pd.Timestamp("2020-01-01")]
 v8_ret = v8_ret[~v8_ret.index.duplicated()]
-print(f"    V8日收益: {len(v8_ret)}天")
+v8_nav = (1 + v8_ret).cumprod()
+print(f"    V8 NAV: {len(v8_nav)}天, 期末 {v8_nav.iloc[-1]:.3f}")
 
-# 对齐公共交易日
-common = stock_nv.index.intersection(v8_ret.index)
-sr = stock_nv.reindex(common).pct_change().fillna(0.0)
-vr = v8_ret.reindex(common).fillna(0.0)
+# ---------- 3. 口径统一: reindex 到工作日 + ffill ----------
+BD = pd.date_range(pd.Timestamp("2020-01-01"), pd.Timestamp("2025-12-31"), freq="B")
+S = stock_nv.reindex(BD).ffill().dropna()
+V = v8_nav.reindex(BD).ffill().dropna()
+idx = S.index.intersection(V.index)
+S = S.reindex(idx) / S.reindex(idx).iloc[0]
+V = V.reindex(idx) / V.reindex(idx).iloc[0]
+print(f"[4] 对齐后 {len(idx)} 个工作日")
 
 def stats(s):
     s = s.dropna()
@@ -61,9 +71,30 @@ def stats(s):
     calmar = ann / abs(mdd) if mdd != 0 else np.nan
     return {"期末": s.iloc[-1], "年化": ann, "回撤": mdd, "夏普": shp, "卡玛": calmar}
 
-# ---------- 3. 恒定权重(日频再平衡) 混合扫描 ----------
+def monthly_rebalance_nav(S, V, w):
+    """月频再平衡: 每月初(新月份首日)重置权重 w/(1-w), 月内买入持有自然漂移
+    实现: 日频迭代, 换月首日先重置目标权重再计算当日收益, 日内权重随两腿相对涨跌漂移
+    """
+    S = S.astype(float)
+    V = V.astype(float)
+    sr = S.pct_change().fillna(0.0).values
+    vr = V.pct_change().fillna(0.0).values
+    month = S.index.to_period('M').values
+    nav = np.empty(len(S))
+    nav[0] = 1.0
+    wS, wV = w, 1.0 - w
+    for i in range(1, len(S)):
+        if month[i] != month[i-1]:
+            wS, wV = w, 1.0 - w
+        r = wS * sr[i] + wV * vr[i]
+        nav[i] = nav[i-1] * (1.0 + r)
+        wS = wS * (1.0 + sr[i]) / (1.0 + r)
+        wV = 1.0 - wS
+    return pd.Series(nav, index=S.index)
+
+# ---------- 4. 月频再平衡混合扫描 ----------
 print("\n" + "=" * 92)
-print("【跨资产配置】股票Top3 + V8(债+黄金) 恒定权重(日频再平衡)")
+print("【跨资产配置】股票Top3 + V8(债+黄金) 月频再平衡(月内买入持有)")
 print("=" * 92)
 print(f"{'股票权重':<8} {'期末':>7} {'年化':>8} {'回撤':>8} {'夏普':>8} {'卡玛':>8}")
 print("-" * 52)
@@ -72,8 +103,7 @@ WEIGHTS = [1.00, 0.90, 0.80, 0.70, 0.60, 0.50, 0.40]
 rows = []
 nav_dict = {}
 for w in WEIGHTS:
-    r = w * sr + (1 - w) * vr
-    nav = (1 + r).cumprod()
+    nav = monthly_rebalance_nav(S, V, w)
     nav_dict[f"股票{w:.0%}"] = nav
     st = stats(nav)
     rows.append({**{"股票权重": f"{w:.0%}"}, **{k: st[k] for k in ["期末","年化","回撤","夏普","卡玛"]}})
@@ -82,12 +112,12 @@ for w in WEIGHTS:
 rdf = pd.DataFrame(rows)
 rdf.to_csv(os.path.join(OUT, "v5_cross_asset.csv"), index=False, encoding="utf-8-sig")
 
-# ---------- 4. 找 MDD ≤ -20% 的最优混合 ----------
+# ---------- 5. 找 MDD ≤ -20% 的最优混合 ----------
 print("\n" + "=" * 92)
 feasible = [r for r in rows if r["回撤"] >= -0.20]
 if feasible:
     best = max(feasible, key=lambda r: r["年化"])
-    print(f"★ 回撤≤-20% 的最优混合: 股票权重 {best['股票权重']}")
+    print(f"★ 回撤≤-20% 的最优混合(月频再平衡): 股票权重 {best['股票权重']}")
     print(f"   年化={best['年化']:.1%}  回撤={best['回撤']:.1%}  夏普={best['夏普']:.2f}  卡玛={best['卡玛']:.2f}")
     st0 = rows[0]
     print(f"   对比纯股票(Top3): 年化 {st0['年化']:.1%}→{best['年化']:.1%} (Δ{best['年化']-st0['年化']:+.1%}), "
@@ -95,22 +125,20 @@ if feasible:
 else:
     print("★ 回撤≤-20% 无可行解，回撤下限见上表")
 
-# ---------- 5. 买入持有(不调仓) 对照 ----------
+# ---------- 6. 买入持有(不调仓) 对照 ----------
 print("\n" + "=" * 92)
 print("【对照】买入持有(初始权重不调仓, 股票权重自然漂移)")
 print("=" * 92)
 print(f"{'初始股票权重':<10} {'期末':>7} {'年化':>8} {'回撤':>8} {'夏普':>8} {'卡玛':>8}")
 print("-" * 52)
-stock_norm = stock_nv.reindex(common) / stock_nv.reindex(common).iloc[0]
-v8_nav = (1 + vr).cumprod()
 for w in [0.90, 0.80, 0.70, 0.60, 0.50]:
-    combined = w * stock_norm + (1 - w) * v8_nav
+    combined = w * S + (1 - w) * V
     st = stats(combined)
     print(f"{w:>9.0%} {st['期末']:>7.3f} {st['年化']:>8.1%} {st['回撤']:>8.1%} {st['夏普']:>8.2f} {st['卡玛']:>8.2f}")
 
-# ---------- 6. 逐年 ----------
+# ---------- 7. 逐年 ----------
 print("\n" + "=" * 92)
-print("【逐年】(恒定权重)")
+print("【逐年】(月频再平衡)")
 print("=" * 92)
 years = [("2020","2020-01-01","2021-01-01"),("2021","2021-01-01","2022-01-01"),
          ("2022","2022-01-01","2023-01-01"),("2023","2023-01-01","2024-01-01"),
@@ -134,7 +162,7 @@ for yr, s0, s1 in years:
         print(f" {ann:>8.1%}", end="")
     print()
 
-# ---------- 7. 画图 ----------
+# ---------- 8. 画图 ----------
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -148,7 +176,7 @@ for c in ["股票100%", "股票80%", "股票70%", "股票60%", "股票50%", "股
     s = nav_dict[c].dropna()
     ax.plot(s.index, s.values, lw=1.6, label=c, alpha=0.9)
 ax.axhline(1.0, color="gray", lw=0.5, ls=":")
-ax.set_title("跨资产配置: 股票Top3 + V8(短债+信用债+黄金) 恒定权重", fontsize=13)
+ax.set_title("跨资产配置(月频再平衡): 股票Top3 + V8(短债+信用债+黄金)", fontsize=13)
 ax.set_ylabel("净值(基准=1)")
 ax.legend(loc="upper left", fontsize=9)
 ax.grid(alpha=0.3)
