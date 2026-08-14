@@ -39,6 +39,7 @@
 ## 品类索引
 
 - [股票 STOCK](./STOCK/README.md)
+  - [股票 GBDT/ENS 选股 + s123 择时（quant_system_v2）](./STOCK/stock_gbdt_ens_s123_timing.md) — ⚠️ 候选（ENS 混合打分中证1000传统行业池月度 Top40 + s123 择时 + V8 避险，2019-2026 年化 11.50%/回撤-31.05%/夏普0.80；无独立 OOS、私有数据、选择过程未控制）
   - [板块择时+大盘个股精选（quant_system_v2）](./STOCK/sector_stock_picking.md) — ⚠️ 候选（低估板块池内 PEG/筹码/ROE 全局 Top3 选股，2020-2025 年化 37.2%/回撤-28.9%/夏普1.45；无独立 OOS、私有数据、选择过程未控制）
   - [风格中性化指数增强（final_quant）](./STOCK/style_neutralized_index_enhancement.md) — ⚠️ 候选（因子 NW 显著；无 OOS、无法回源复现、MaxDD 待回源复核）
   - [回撤控制：MA20 三档（risk_control）](./STOCK/risk_control.md) — ⚠️ 候选（风控层有 2018-2019 跨期支持；完整策略 OOS 未验证、私有数据不可独立复现）
