@@ -10,7 +10,7 @@
 ## 状态
 
 - **V5 股票精选（Top3 + ROE≥12% + PEG<1.5 + 筹码前50% + 市值50亿起 + 上市满3年）**: ⚠️ 候选 — 前视修复已实施；**Rolling Walk-Forward 真实 OOS 两年年化 7.7%/夏普 0.41**，跑输沪深300/中证1000ETF；静态全期 24.4% 为验证集过拟合；**牛熊择时（估值+趋势，任意基准）系统性验证均为负贡献，无择时为最优形态**；无冻结后独立 OOS、研究选择过程未做多重检验控制、数据为本地私有、幸存者偏差/换手率口径/ROE 覆盖率偏差待检验
-  - 多维标签: research_status=under_review · oos_scope=Walk-Forward 2024+2025（真实OOS） · reproducibility=partial · data_availability=private · code_review=reviewed · execution_validation=partial
+  - 多维标签: research_status=exploratory · oos_scope=none · reproducibility=partial · data_availability=private · code_review=not_reviewed · execution_validation=partial
 - **原 V6-S1 年化 37.2% 结论**: ❌ 已证伪（前视 bug：选股用当月月末数据、当月月初执行，带入整月未来信息；修复后年化仅 5.0%）
 - **原 v4-A3 年化 30.4%~35.5% 结论**: ❌ 已证伪（同一前视 bug；修复后年化 6.5%）
 
@@ -156,6 +156,7 @@
 6. **幸存者偏差**：1986 只股票池 + 用当前名称静态过滤 ST/退市，退市股全程不存在——已识别但未处理。
 7. **换手率口径**：`min_turnover_pct` 标称"月换手率"，实际仍是日频快照的日换手率——已识别但未修正。
 8. **降回撤的唯一有效方向是跨资产配置**：牛熊择时（估值 s123 + 趋势均线/双均线，沪深300/中证1000 基准）已系统性排除、分散持仓（Top5-15）为负优化（Top3 最优）；唯一有效降回撤手段是股票端 + V8（短债/信用债/黄金）跨资产配置——60/40 月频再平衡年化 18.5%、回撤 -18.4%、夏普 1.13（详见"跨资产配置验证"节）。
+9. **与 [stock_gbdt_ens_s123_timing.md](./stock_gbdt_ens_s123_timing.md) 的"组合级 s123 择时有效"不冲突**：本篇是 Top3 高度集中策略，alpha 与风控已内嵌在个股端（月度质量选股 + 个股 30% 止盈 / 270 天时间止损），组合级择时冗余甚至有害；该文是 Top40 分散组合（无个股止盈/止损），需要组合级 s123 风控规避系统性下跌。分歧来源即"组合级风控 vs 个股级风控"的适用边界，二者结论可并存。
 
 ## 参考
 - 详细过程与网格中间结果：`quant_system_v2/research/sector_rotation/`（v5_grid_search.py / v5_best_backtest.py / v5_compare_benchmarks.py / v5_walk_forward.py / v5_timing_compare.py / v5_timing_zz1000.py / v5_cross_asset.py / backtest_stock_picking_v6.py）

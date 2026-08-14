@@ -4,7 +4,7 @@ A股股票品类已确认研究成果索引。
 
 | 文件 | 主题 | 状态 |
 |------|------|------|
-| [stock_gbdt_ens_s123_timing.md](./stock_gbdt_ens_s123_timing.md) | 股票 GBDT/ENS 选股 + s123 择时（方案B）：ENS 混合打分中证1000传统行业池月度 Top40 + s123 择时进出 + V8 避险 | ⚠️ 候选（2019-2026 全期年化 11.50%/回撤-31.05%/夏普0.80；无独立 OOS、私有数据、选择过程未控制；个股级 MA5 卖出已证伪） |
+| [stock_gbdt_ens_s123_timing.md](./stock_gbdt_ens_s123_timing.md) | 股票 GBDT/ENS 选股 + s123 择时（方案B）：ENS 混合打分中证1000传统行业池月度 Top40 + s123 择时进出 + V8 避险 | ⚠️ 候选（2019-2026 全期年化 11.45%/回撤-30.69%/夏普0.79；无独立 OOS、私有数据、选择过程未控制；个股级 MA5 卖出已证伪） |
 | [sector_stock_picking.md](./sector_stock_picking.md) | 板块择时+大盘个股精选：低估池内 PEG40%/筹码25%/ROE15% 全局 Top3 选股，严格 ST/PE/市值/筹码硬过滤 | ⚠️ 候选（2020-2025 全期年化 37.2%/回撤-28.9%/夏普1.45；无独立 OOS、私有数据、选择过程未控制；v5 硬过滤版已证伪） |
 | [style_neutralized_index_enhancement.md](./style_neutralized_index_enhancement.md) | 风格中性化指数增强：微观结构因子 + MA20 风控 | ⚠️ 候选（因子 NW 显著；无 OOS、无法回源复现、MaxDD 待回源复核） |
 | [option_enhanced_study005.md](./option_enhanced_study005.md) | 期权增强型全局策略 Study 005 | ❌ 已证伪（独立重跑全负，Sharpe 3.08 无法复现） |
