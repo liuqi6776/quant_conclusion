@@ -22,3 +22,4 @@ A股股票品类已确认研究成果索引。
 | [study008_incremental_enhancements.md](./study008_incremental_enhancements.md) | study_008 增量增强路径验证：BASE+VAL 4因子基线 + 六条增量路径全否定 + PIT 数据端核验 | ⚠️ 基线候选（年化 14.62%/卡玛 0.55）/ ❌ 六条增量路径全部证伪 / ✅ PIT 数据端核验通过（2026-08-06，工程核验，非策略可用性） |
 | [stock_picking_v5_fixed.md](./stock_picking_v5_fixed.md) | 股票精选前视修复审计 + V5-BEST 结论 + Walk-Forward 真实OOS + 牛熊择时验证 + 跨资产配置 | ⚠️ 候选（WF真实OOS 年化7.7%/夏普0.41，跑输ETF；验证集过拟合坐实；牛熊择时（估值+趋势，任意基准）均虚高；跨资产配置 60/40 月频再平衡年化18.5%/回撤-18.4%/夏普1.13 为唯一有效降回撤方向；前视修复已实施；幸存者偏差/换手率口径/ROE覆盖率偏差待检验）/ 旧 V6-S1 37.2% ❌ 已证伪 |
 | [growth_direction_exhaustion.md](./growth_direction_exhaustion.md) | 股票 GBDT/ENS 选股增长方向穷举总结：收益层/组合风险层/情绪层增量路线全否定 + 基线锁定 + 剩余方向 | ⚠️ 基线候选（GBDT C8 滚动 WFO ICIR 2.44 天花板）/ ❌ 扩标的池+panel因子+Alpha101+LSTM+联动优化+风险平价+情绪因子全部证伪 / ✅ 幸存者偏差 PIT 核验通过 |
+| [post_growth_filter_report.md](./post_growth_filter_report.md) | 成长制造白名单过滤实验全量评估报告：全量指标落盘 + 静态分类偏差 + 行业上限架空机制审计 | 🔬 探索线索（GM_CORE post 14.14% 确认为静态分类后见之明+持仓骤缩至13.6只所致，维持全市场Top40基准） |
