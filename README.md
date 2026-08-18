@@ -39,6 +39,7 @@
 ## 品类索引
 
 - [股票 STOCK](./STOCK/README.md)
+  - [股票综合复合量化策略：全市场 ENS + S123 三档择时 + 净值降档 + IM 期货低基差对冲（quant_system_v2）](./STOCK/stock_composite_ens_risk_im_hedge.md) — ✅ 主策略就绪（全市场 ENS 选股+三档择时+净值降档 2019-2026 年化 11.80%/回撤-25.48%/夏普0.77；IM对冲β=0.5版年化11.78%/回撤-10.90%/夏普0.94/卡玛1.08）
   - [股票 GBDT/ENS 选股 + s123 择时（quant_system_v2）](./STOCK/stock_gbdt_ens_s123_timing.md) — ⚠️ 候选（ENS 混合打分中证1000传统行业池月度 Top40 + s123 择时 + V8 避险，2019-2026 年化 11.45%/回撤-30.69%/夏普0.79；无独立 OOS、私有数据、选择过程未控制）
   - [板块择时+大盘个股精选（quant_system_v2）](./STOCK/sector_stock_picking.md) — ⚠️ 候选（低估板块池内 PEG/筹码/ROE 全局 Top3 选股，2020-2025 年化 37.2%/回撤-28.9%/夏普1.45；无独立 OOS、私有数据、选择过程未控制）
   - [风格中性化指数增强（final_quant）](./STOCK/style_neutralized_index_enhancement.md) — ⚠️ 候选（因子 NW 显著；无 OOS、无法回源复现、MaxDD 待回源复核）
@@ -55,6 +56,7 @@
   - [风格因子增量（style_factors）](./STOCK/style_factors.md) — ⚠️ 候选（样本内价值系显著增量；无独立 OOS）
   - [WorldQuant Alpha101 因子验证](./STOCK/alpha101_factors.md) — ❌ 已证伪（月频下无增量）
   - [study_008 增量增强路径验证（quant_system_v2）](./STOCK/study008_incremental_enhancements.md) — ⚠️ 基线候选（样本内强局部最优）/ ❌ 六条增量路径全部证伪 / ✅ PIT 数据端核验通过（工程核验，非策略可用性）
+  - [股票 GBDT/ENS 选股增长方向穷举总结（quant_system_v2）](./STOCK/growth_direction_exhaustion.md) — ⚠️ 基线候选（GBDT C8 滚动 WFO ICIR 2.44 天花板）/ ❌ 收益层+组合风险层+情绪层增量路线全部证伪 / ✅ 幸存者偏差 PIT 核验通过
 - [ETF](./ETF/README.md)
   - [A股ETF期权 Max Pain 研究（quant-research）](./ETF/max_pain_etf_options.md) — ⚠️ 候选（少量结论已回测，大部分未验证）
 - [可转债 CB](./CB/README.md)

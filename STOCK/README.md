@@ -4,6 +4,7 @@ A股股票品类已确认研究成果索引。
 
 | 文件 | 主题 | 状态 |
 |------|------|------|
+| [stock_composite_ens_risk_im_hedge.md](./stock_composite_ens_risk_im_hedge.md) | 股票综合复合量化策略：全市场 ENS 选股 + S123 三档择时 + 净值降档 + IM 期货低基差对冲 | ✅ 主策略就绪（2019-2026 全期年化 11.80%/回撤-25.48%/夏普0.77；IM对冲β=0.5版年化11.78%/回撤-10.90%/夏普0.94/卡玛1.08） |
 | [stock_gbdt_ens_s123_timing.md](./stock_gbdt_ens_s123_timing.md) | 股票 GBDT/ENS 选股 + s123 择时（方案B）：ENS 混合打分中证1000传统行业池月度 Top40 + s123 择时进出 + V8 避险 | ⚠️ 候选（2019-2026 全期年化 11.45%/回撤-30.69%/夏普0.79；无独立 OOS、私有数据、选择过程未控制；个股级 MA5 卖出已证伪） |
 | [sector_stock_picking.md](./sector_stock_picking.md) | 板块择时+大盘个股精选：低估池内 PEG40%/筹码25%/ROE15% 全局 Top3 选股，严格 ST/PE/市值/筹码硬过滤 | ⚠️ 候选（2020-2025 全期年化 37.2%/回撤-28.9%/夏普1.45；无独立 OOS、私有数据、选择过程未控制；v5 硬过滤版已证伪） |
 | [style_neutralized_index_enhancement.md](./style_neutralized_index_enhancement.md) | 风格中性化指数增强：微观结构因子 + MA20 风控 | ⚠️ 候选（因子 NW 显著；无 OOS、无法回源复现、MaxDD 待回源复核） |
@@ -19,4 +20,5 @@ A股股票品类已确认研究成果索引。
 | [risk_control.md](./risk_control.md) | 回撤控制对比：MA20三档/波动率目标/回撤触发/CPPI-TIPP | ⚠️ 候选（核心逻辑五轮静态审计；2018-2019 风控层跨期支持 oos_scope=component_only；2026-07 快照下 MA20 仅回撤改善成立，收益增强方向反转；完整策略 OOS 未验证、私有数据不可独立复现） |
 | [defensive_asset_allocation.md](./defensive_asset_allocation.md) | 多资产避险：RS12 弱段持货基/国债/黄金/混合对比 | ⚠️ 候选（V8 卡玛最优 0.93；单周期 2020~2026，未证跨宏观周期稳健） |
 | [study008_incremental_enhancements.md](./study008_incremental_enhancements.md) | study_008 增量增强路径验证：BASE+VAL 4因子基线 + 六条增量路径全否定 + PIT 数据端核验 | ⚠️ 基线候选（年化 14.62%/卡玛 0.55）/ ❌ 六条增量路径全部证伪 / ✅ PIT 数据端核验通过（2026-08-06，工程核验，非策略可用性） |
-| [stock_picking_v5_fixed.md](./stock_picking_v5_fixed.md) | 股票精选前视修复审计 + V5-BEST 结论 + Walk-Forward 真实OOS + 牛熊择时验证 + 跨资产配置 | ⚠️ 候选（WF真实OOS 年化7.7%/夏普0.41，跑输ETF；验证集过拟合坐实；牛熊择时（估值+趋势，任意基准）均负贡献、无择时最优；跨资产配置 60/40 月频再平衡年化18.5%/回撤-18.4%/夏普1.13 为唯一有效降回撤方向；前视修复已实施；幸存者偏差/换手率口径/ROE覆盖率偏差待检验）/ 旧 V6-S1 37.2% ❌ 已证伪 |
+| [stock_picking_v5_fixed.md](./stock_picking_v5_fixed.md) | 股票精选前视修复审计 + V5-BEST 结论 + Walk-Forward 真实OOS + 牛熊择时验证 + 跨资产配置 | ⚠️ 候选（WF真实OOS 年化7.7%/夏普0.41，跑输ETF；验证集过拟合坐实；牛熊择时（估值+趋势，任意基准）均虚高；跨资产配置 60/40 月频再平衡年化18.5%/回撤-18.4%/夏普1.13 为唯一有效降回撤方向；前视修复已实施；幸存者偏差/换手率口径/ROE覆盖率偏差待检验）/ 旧 V6-S1 37.2% ❌ 已证伪 |
+| [growth_direction_exhaustion.md](./growth_direction_exhaustion.md) | 股票 GBDT/ENS 选股增长方向穷举总结：收益层/组合风险层/情绪层增量路线全否定 + 基线锁定 + 剩余方向 | ⚠️ 基线候选（GBDT C8 滚动 WFO ICIR 2.44 天花板）/ ❌ 扩标的池+panel因子+Alpha101+LSTM+联动优化+风险平价+情绪因子全部证伪 / ✅ 幸存者偏差 PIT 核验通过 |
