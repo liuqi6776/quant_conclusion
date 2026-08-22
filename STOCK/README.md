@@ -29,6 +29,8 @@ A股股票品类已确认研究成果索引。
 | [staggered_tranches_report.md](./staggered_tranches_report.md) | **交错滚动子组合 (Staggered Rolling Tranches) 夏普极值化实证报告**：重叠多子账户周度/双周交错调仓；彻底消解信号半衰期衰减与单日择时偶然性 | 🏆 **夏普比率极值化与平滑成果**（GBDT20 总收益提升超 7 倍达 +22.56%，Hybrid 双周交错夏普升至 0.20/回撤压降至 -26.46%） |
 | [daily_rolling_staggered_report.md](./daily_rolling_staggered_report.md) | **方案 A：高频日级滚动 Alpha 引擎与交错子组合实证报告**：逐日高频微观量价反转 (5d) + 动量加速度 + 低波动收缩；消除信号滞后惩罚 | 🛡️ **波动率与回撤优化成果**（年化波动率深度压缩至 12.18%，最大回撤收敛至 -22.32%） |
 | [leading_crowding_report.md](./leading_crowding_report.md) | **P3 突破实证：前瞻性流动性拥挤度风控研究报告**：筹码顶背离预警 + 换手突变放量滞涨识别 + Amihud 极值过滤；消解微观踩踏 | 🛡️ **回撤与风控优化成果**（年化波动率压缩至 13.15%，回撤显著收敛，避免割肉在地板） |
+| [multi_asset_macro_report.md](./multi_asset_macro_report.md) | **P4 突破实证：多资产协同大类配置系统研究报告**：股票 Alpha + IM 期货对冲 + 国债 ETF (511010) + 黄金 ETF (518880) + 银华日利 (511880) | 🏆 **夏普破 1.0+ 终极成果**（IM 对冲多资产夏普达 1.21/回撤 -12.99%；动态平价夏普达 1.33，实现机构级容量与全周期穿越） |
+
 
 
 
