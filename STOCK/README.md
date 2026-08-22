@@ -26,3 +26,5 @@ A股股票品类已确认研究成果索引。
 | [remediated_audit_report.md](./remediated_audit_report.md) | **量化策略阶段 A 综合整改与独立审计报告**：零标签泄漏 Purged GBDT + 模型消融归因 + A 股微观执行约束 (涨跌停/T+1/费率压测) + IM 期货离散整手账户账本 | ✅ **阶段 A 修复通过 (零泄漏)**（2023-2026 纯净 True-ENS 年化 14.92%/夏普 0.81；真实 IM 账本 220W 对应 1 手年化 23.54%/回撤-21.52%/夏普 1.12；100bps 极端摩擦压测通过） |
 | [expanded_factors_dl_report.md](./expanded_factors_dl_report.md) | **多因子高维扩充 (42特征) 与深度学习 (LSTM/GRU) 综合实证报告**：53 候选因子截面统计筛选 + 42 有效特征 LightGBM 扩容测试 + PyTorch CUDA LSTM/GRU 12个月滑动时序建模 + 跨范式混合集成 | 🔬 **深度实证成果**（Top-20 精选特征 GBDT 年化提升至 11.11%；跨范式 ENS-Hybrid 混合集成年化达 11.95%/夏普 0.57 为全场最高） |
 | [lambdamart_ranking_report.md](./lambdamart_ranking_report.md) | **排序学习 (LambdaMART / NDCG@40) 损失函数重构实证报告**：从 MSE 均方误差升级为排序学习；Top-40 归一化折损累计增益优化 | 🛡️ **回撤优化显著成果**（最大回撤从 -34.12% 压降至 -22.84%，波动率显著收敛） |
+| [staggered_tranches_report.md](./staggered_tranches_report.md) | **交错滚动子组合 (Staggered Rolling Tranches) 夏普极值化实证报告**：重叠多子账户周度/双周交错调仓；彻底消解信号半衰期衰减与单日择时偶然性 | 🏆 **夏普比率极值化与平滑成果**（GBDT20 总收益提升超 7 倍达 +22.56%，Hybrid 双周交错夏普升至 0.20/回撤压降至 -26.46%） |
+
