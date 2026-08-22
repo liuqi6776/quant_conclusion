@@ -27,4 +27,6 @@ A股股票品类已确认研究成果索引。
 | [expanded_factors_dl_report.md](./expanded_factors_dl_report.md) | **多因子高维扩充 (42特征) 与深度学习 (LSTM/GRU) 综合实证报告**：53 候选因子截面统计筛选 + 42 有效特征 LightGBM 扩容测试 + PyTorch CUDA LSTM/GRU 12个月滑动时序建模 + 跨范式混合集成 | 🔬 **深度实证成果**（Top-20 精选特征 GBDT 年化提升至 11.11%；跨范式 ENS-Hybrid 混合集成年化达 11.95%/夏普 0.57 为全场最高） |
 | [lambdamart_ranking_report.md](./lambdamart_ranking_report.md) | **排序学习 (LambdaMART / NDCG@40) 损失函数重构实证报告**：从 MSE 均方误差升级为排序学习；Top-40 归一化折损累计增益优化 | 🛡️ **回撤优化显著成果**（最大回撤从 -34.12% 压降至 -22.84%，波动率显著收敛） |
 | [staggered_tranches_report.md](./staggered_tranches_report.md) | **交错滚动子组合 (Staggered Rolling Tranches) 夏普极值化实证报告**：重叠多子账户周度/双周交错调仓；彻底消解信号半衰期衰减与单日择时偶然性 | 🏆 **夏普比率极值化与平滑成果**（GBDT20 总收益提升超 7 倍达 +22.56%，Hybrid 双周交错夏普升至 0.20/回撤压降至 -26.46%） |
+| [daily_rolling_staggered_report.md](./daily_rolling_staggered_report.md) | **方案 A：高频日级滚动 Alpha 引擎与交错子组合实证报告**：逐日高频微观量价反转 (5d) + 动量加速度 + 低波动收缩；消除信号滞后惩罚 | 🛡️ **波动率与回撤优化成果**（年化波动率深度压缩至 12.18%，最大回撤收敛至 -22.32%） |
+
 
