@@ -31,6 +31,8 @@ A股股票品类已确认研究成果索引。
 | [leading_crowding_report.md](./leading_crowding_report.md) | **P3 突破实证：前瞻性流动性拥挤度风控研究报告**：筹码顶背离预警 + 换手突变放量滞涨识别 + Amihud 极值过滤 | 🔬 **探索性风控线索**（有效压降波动率，但牺牲收益，需与大类资产协同） |
 | [multi_asset_macro_report.md](./multi_asset_macro_report.md) | **P4 突破实证：多资产协同大类配置系统研究报告**：股票 Alpha + IM 期货对冲 + 国债 ETF (511010) + 黄金 ETF (518880) + 银华日利 (511880) | ⚠️ **历史虚高指标已作废** (旧夏普 1.21/1.33 存在本金重复计算与建仓时序缺陷，已被纯净账本重跑数据取代) |
 | [remediated_clean_report.md](./remediated_clean_report.md) | **【正式基线】全面量化审计整改与纯净流水线重跑报告**：单一现金池 (零重复计资) + 嵌套样本内特征选择 + 真实 20日 ADV + 停牌禁止交易 + 降档等比减仓 | ✅ **审计通过纯净生产基线**（2023-2026 开发期纯净重跑：纯股票 Alpha 年化 11.12%/夏普 0.45；纯净 IM 对冲年化 11.23%/夏普 0.61/回撤 -28.15%；★ IM 中性对冲多资产年化 6.30%/夏普 0.54/回撤 -10.71%/波动率 7.95%） |
+| [tournament_report.md](./tournament_report.md) | **【模型全景比武】严格生产流水线全模型消融比武研究报告**：LightGBM (10/20/42) + LambdaMART (NDCG@40) + PyTorch CUDA LSTM/GRU + True-ENS 跨范式融合 | 🏆 **模型选型定论**（LSTM 单独年化仅 8.05% 未显优势；★ True ENS-Rank-Hybrid 融合跨范式模型实现全场最高年化 13.70%/夏普 0.61/超额中证1000达 +42.2%） |
+
 
 
 
