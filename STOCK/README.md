@@ -23,13 +23,14 @@ A股股票品类已确认研究成果索引。
 | [stock_picking_v5_fixed.md](./stock_picking_v5_fixed.md) | 股票精选前视修复审计 + V5-BEST 结论 + Walk-Forward 真实OOS + 牛熊择时验证 + 跨资产配置 | ⚠️ 候选（WF真实OOS 年化7.7%/夏普0.41，跑输ETF；验证集过拟合坐实；牛熊择时（估值+趋势，任意基准）均虚高；跨资产配置 60/40 月频再平衡年化18.5%/回撤-18.4%/夏普1.13 为唯一有效降回撤方向；前视修复已实施；幸存者偏差/换手率口径/ROE覆盖率偏差待检验）/ 旧 V6-S1 37.2% ❌ 已证伪 |
 | [growth_direction_exhaustion.md](./growth_direction_exhaustion.md) | 股票 GBDT/ENS 选股增长方向穷举总结：收益层/组合风险层/情绪层增量路线全否定 + 基线锁定 + 剩余方向 | ⚠️ 基线候选（GBDT C8 滚动 WFO ICIR 2.44 天花板）/ ❌ 扩标的池+panel因子+Alpha101+LSTM+联动优化+风险平价+情绪因子全部证伪 / ✅ 幸存者偏差 PIT 核验通过 |
 | [post_growth_filter_report.md](./post_growth_filter_report.md) | 成长制造白名单过滤实验全量评估报告：全量指标落盘 + 静态分类偏差 + 行业上限架空机制审计 | 🔬 探索线索（GM_CORE post 14.14% 确认为静态分类后见之明+持仓骤缩至13.6只所致，维持全市场Top40基准） |
-| [remediated_audit_report.md](./remediated_audit_report.md) | **量化策略阶段 A 综合整改与独立审计报告**：零标签泄漏 Purged GBDT + 模型消融归因 + A 股微观执行约束 (涨跌停/T+1/费率压测) + IM 期货离散整手账户账本 | ✅ **阶段 A 修复通过 (零泄漏)**（2023-2026 纯净 True-ENS 年化 14.92%/夏普 0.81；真实 IM 账本 220W 对应 1 手年化 23.54%/回撤-21.52%/夏普 1.12；100bps 极端摩擦压测通过） |
-| [expanded_factors_dl_report.md](./expanded_factors_dl_report.md) | **多因子高维扩充 (42特征) 与深度学习 (LSTM/GRU) 综合实证报告**：53 候选因子截面统计筛选 + 42 有效特征 LightGBM 扩容测试 + PyTorch CUDA LSTM/GRU 12个月滑动时序建模 + 跨范式混合集成 | 🔬 **深度实证成果**（Top-20 精选特征 GBDT 年化提升至 11.11%；跨范式 ENS-Hybrid 混合集成年化达 11.95%/夏普 0.57 为全场最高） |
-| [lambdamart_ranking_report.md](./lambdamart_ranking_report.md) | **排序学习 (LambdaMART / NDCG@40) 损失函数重构实证报告**：从 MSE 均方误差升级为排序学习；Top-40 归一化折损累计增益优化 | 🛡️ **回撤优化显著成果**（最大回撤从 -34.12% 压降至 -22.84%，波动率显著收敛） |
-| [staggered_tranches_report.md](./staggered_tranches_report.md) | **交错滚动子组合 (Staggered Rolling Tranches) 夏普极值化实证报告**：重叠多子账户周度/双周交错调仓；彻底消解信号半衰期衰减与单日择时偶然性 | 🏆 **夏普比率极值化与平滑成果**（GBDT20 总收益提升超 7 倍达 +22.56%，Hybrid 双周交错夏普升至 0.20/回撤压降至 -26.46%） |
-| [daily_rolling_staggered_report.md](./daily_rolling_staggered_report.md) | **方案 A：高频日级滚动 Alpha 引擎与交错子组合实证报告**：逐日高频微观量价反转 (5d) + 动量加速度 + 低波动收缩；消除信号滞后惩罚 | 🛡️ **波动率与回撤优化成果**（年化波动率深度压缩至 12.18%，最大回撤收敛至 -22.32%） |
-| [leading_crowding_report.md](./leading_crowding_report.md) | **P3 突破实证：前瞻性流动性拥挤度风控研究报告**：筹码顶背离预警 + 换手突变放量滞涨识别 + Amihud 极值过滤；消解微观踩踏 | 🛡️ **回撤与风控优化成果**（年化波动率压缩至 13.15%，回撤显著收敛，避免割肉在地板） |
-| [multi_asset_macro_report.md](./multi_asset_macro_report.md) | **P4 突破实证：多资产协同大类配置系统研究报告**：股票 Alpha + IM 期货对冲 + 国债 ETF (511010) + 黄金 ETF (518880) + 银华日利 (511880) | 🏆 **夏普破 1.0+ 终极成果**（IM 对冲多资产夏普达 1.21/回撤 -12.99%；动态平价夏普达 1.33，实现机构级容量与全周期穿越） |
+| [remediated_audit_report.md](./remediated_audit_report.md) | **量化策略阶段 A 综合整改与独立审计报告**：零标签泄漏 Purged GBDT + 模型消融归因 + A 股微观执行约束 (涨跌停/T+1/费率压测) | ⚠️ **历史指标已作废撤回** (旧 True-ENS 23.41% 与旧 IM 23.54% 存在账本重复计资与全样本筛选缺陷，已正式标记为 Superseded，降级为开发期探索) |
+| [expanded_factors_dl_report.md](./expanded_factors_dl_report.md) | **多因子高维扩充 (42特征) 与深度学习 (LSTM/GRU) 综合实证报告**：53 候选因子截面统计筛选 + 42 有效特征 LightGBM 扩容测试 + PyTorch CUDA LSTM/GRU 12个月滑动时序建模 | 🔬 **开发期探索性结果**（全样本特征选择存在测试期重叠，仅作为特征工程参考，不代表独立 OOS） |
+| [lambdamart_ranking_report.md](./lambdamart_ranking_report.md) | **排序学习 (LambdaMART / NDCG@40) 损失函数重构实证报告**：从 MSE 均方误差升级为排序学习；Top-40 归一化折损累计增益优化 | 🔬 **探索性负面/风控对照**（回撤显著收敛，但 Rank-Hybrid 实质回退为纯排序） |
+| [staggered_tranches_report.md](./staggered_tranches_report.md) | **交错滚动子组合 (Staggered Rolling Tranches) 夏普极值化实证报告**：重叠多子账户周度/双周交错调仓 | 🔬 **探索性平滑线索**（平滑净值曲线，但超额提升有限） |
+| [daily_rolling_staggered_report.md](./daily_rolling_staggered_report.md) | **方案 A：高频日级滚动 Alpha 引擎与交错子组合实证报告**：逐日高频微观量价反转 (5d) + 动量加速度 + 低波动收缩 | ❌ **否定实验**（日级量价 Alpha 未能提供独立超额，建议停止继续投入） |
+| [leading_crowding_report.md](./leading_crowding_report.md) | **P3 突破实证：前瞻性流动性拥挤度风控研究报告**：筹码顶背离预警 + 换手突变放量滞涨识别 + Amihud 极值过滤 | 🔬 **探索性风控线索**（有效压降波动率，但牺牲收益，需与大类资产协同） |
+| [multi_asset_macro_report.md](./multi_asset_macro_report.md) | **P4 突破实证：多资产协同大类配置系统研究报告**：股票 Alpha + IM 期货对冲 + 国债 ETF (511010) + 黄金 ETF (518880) + 银华日利 (511880) | ⚠️ **历史虚高指标已作废** (旧夏普 1.21/1.33 存在本金重复计算与建仓时序缺陷，已被纯净账本重跑数据取代) |
+| [remediated_clean_report.md](./remediated_clean_report.md) | **【正式基线】全面量化审计整改与纯净流水线重跑报告**：单一现金池 (零重复计资) + 嵌套样本内特征选择 + 真实 20日 ADV + 停牌禁止交易 + 降档等比减仓 | ✅ **审计通过纯净生产基线**（2023-2026 开发期纯净重跑：纯股票 Alpha 年化 11.12%/夏普 0.45；纯净 IM 对冲年化 11.23%/夏普 0.61/回撤 -28.15%；★ IM 中性对冲多资产年化 6.30%/夏普 0.54/回撤 -10.71%/波动率 7.95%） |
 
 
 
