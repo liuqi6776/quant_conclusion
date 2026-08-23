@@ -32,6 +32,9 @@ A股股票品类已确认研究成果索引。
 | [multi_asset_macro_report.md](./multi_asset_macro_report.md) | **P4 突破实证：多资产协同大类配置系统研究报告**：股票 Alpha + IM 期货对冲 + 国债 ETF (511010) + 黄金 ETF (518880) + 银华日利 (511880) | ⚠️ **历史虚高指标已作废** (旧夏普 1.21/1.33 存在本金重复计算与建仓时序缺陷，已被纯净账本重跑数据取代) |
 | [remediated_clean_report.md](./remediated_clean_report.md) | **【正式基线】全面量化审计整改与纯净流水线重跑报告**：单一现金池 (零重复计资) + 嵌套样本内特征选择 + 真实 20日 ADV + 停牌禁止交易 + 降档等比减仓 | ✅ **审计通过纯净生产基线**（2023-2026 开发期纯净重跑：纯股票 Alpha 年化 11.12%/夏普 0.45；纯净 IM 对冲年化 11.23%/夏普 0.61/回撤 -28.15%；★ IM 中性对冲多资产年化 6.30%/夏普 0.54/回撤 -10.71%/波动率 7.95%） |
 | [tournament_report.md](./tournament_report.md) | **【模型全景比武】严格生产流水线全模型消融比武研究报告**：LightGBM (10/20/42) + LambdaMART (NDCG@40) + PyTorch CUDA LSTM/GRU + True-ENS 跨范式融合 | 🏆 **模型选型定论**（LSTM 单独年化仅 8.05% 未显优势；★ True ENS-Rank-Hybrid 融合跨范式模型实现全场最高年化 13.70%/夏普 0.61/超额中证1000达 +42.2%） |
+| [v5_roe_leakage_audit_report.md](./v5_roe_leakage_audit_report.md) | **【深度专项审计】V5 策略 ROE 财务缺失放行漏洞与持仓机制审计报告**：17% 极低覆盖率 + `isna()` 宽松放行实证 + 164 天低频长持仓机制归因 | ❌ **假阳性定性**（证实 V5-BEST 高收益主要源于数据缺失与小盘高 Beta 弹性，非真实高质量企业 Alpha） |
+| [clean_leverage_im_report.md](./clean_leverage_im_report.md) | **【高胜率杠杆实证】纯净生产账本动态 IM 对冲与不对称加档研究报告**：基差条件化动态对冲 (beta 0.35~0.70) + S1 不对称加档 (1.2x) | 🛡️ **对冲增强定论**（基差动态 IM 对冲将最大回撤从 -40.6% 砍半至 -22.0%，夏普提升 2.5 倍；S1 左侧加杠杆需谨慎） |
+
 
 
 
