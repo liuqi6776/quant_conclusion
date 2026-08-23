@@ -1,65 +1,49 @@
-# 可转债与正股 15 分钟跨资产同频量化策略（已实测确认 · Phase 1&2 增强版）
-# Synchronized Stock & Convertible Bond 15-Min Cross-Asset Quantitative Strategy (Phase 1 & 2 Enhanced)
+# 可转债与正股 15 分钟跨资产同频量化策略（审计作废与整改记录）
+# Synchronized Stock & CB 15-Min Strategy (Audit Invalidation & Remediation Record)
 
-> **来源**: [Convertible_Bond_research (GitHub)](https://github.com/liuqi6776/Convertible_Bond_research)  
-> **数据时间跨度**: 2024-01-02 至 2026-08-21（覆盖 996 只标的正股 15min K 线与 1030 只转债高频数据，总样本超 78 万根对齐切片）  
-> **验证方式**: 严格无未来函数事件驱动引擎（次周期 Next Bar 开盘价撮合 + 万一佣金 + 万二滑点真实摩擦）  
-> **状态**: ✅ 已确认（实证回测完成，三年全正收益，夏普比率 1.63，累计收益 +44.70%，最大回撤 -5.41%）  
-> **多维标签**: `research_status=confirmed` · `oos_scope=2024_2026` · `reproducibility=reproducible` · `data_availability=local_parquet` · `code_review=reviewed` · `execution_validation=realistic_next_bar`
-
----
-
-## 1. 核心研究结论摘要 (Executive Summary)
-
-1. **同频跨资产数据的质变价值**：
-   - 过去仅使用正股 T-1 日频特征驱动 15min 转债交易，策略处于持续摩擦亏损（累计 -6.53%，夏普 -0.20）；
-   - 接入正股 **15 分钟同频高频数据** 后，挖掘出显著的先行-滞后价差（`lead_lag_spread`，**RankIC 高达 +0.0302**）。
-2. **Phase 1 宏观择时双状态机（CBLens 启示）**：
-   - 结合大盘 20 日均线与全市场中位估值分位数，在市场系统性破位时（如 2026 年 3 月）**果断空仓熔断**，避开单月 20.7 万元暴跌，而在牛市主升浪顺应动量进攻。
-3. **Phase 2 BS 理论错估选券排序（Pricing-Research 启示）**：
-   - 将郑振龙教授团队的 **BS / 纯债贴现理论错估度（`mispricing_score`）** 作为选券打分优选权重，优先做多严重被低估且具备纯债底保护的标的，推动 **全周期累计收益达 +44.70%，夏普比率跃升至 1.63，最大回撤压制在 -5.41%**。
+> **审查结论**: ❌ **FAIL / 回测作废（存在明确日内前视未来函数与选样偏差，严禁用于实盘）**  
+> **多维标签**: `research_status=invalidated_due_to_lookahead` · `oos_scope=none` · `reproducibility=non_reproducible` · `data_availability=private` · `code_review=failed` · `execution_validation=lookahead_detected`  
+> **审查对象**: `Convertible_Bond_research` (main@809c7994) 与 `quant_conclusion` (main@0077e13d)  
+> **核心决议**: **停止引用 44.70% 累计收益与 Sharpe 1.63 指标，全系统状态降级，策略严禁实盘部署。**
 
 ---
 
-## 2. 策略演进与四阶段实证绩效对比 (Performance Evolution)
+## 1. 审查发现的致命缺陷清单 (Critical Flaws Identified)
 
-| 核心指标 (Metric) | 阶段一：仅日频 T-1 | 阶段二：15m 同频 | 阶段三：三大防御机制 | **阶段四：Phase 1&2 理论错估增强 (终极版)** | 提升与突破说明 |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **初始本金 (Capital)** | 100 万元 | 100 万元 | 100 万元 | **1,000,000 元** | 标准实盘资金配置 |
-| **期末总资产 (Equity)** | 93.47 万元 | 110.84 万元 | 131.46 万元 | **1,447,000.75 元** | **全周期净赚 44.70 万元** |
-| **累计收益率 (Total Return)** | -6.53% | +10.84% | +31.46% | **+44.70%** | **收益暴增，创全周期历史新高** |
-| **年化收益率 (Annualized)** | -1.72% | +4.24% | +11.68% | **+16.09%** | **实现高品质双位数年化收益** |
-| **夏普比率 (Sharpe Ratio)** | -0.20 | +0.33 | 1.26 | **1.63** | **夏普比率跃升至 1.63 卓越水平** |
-| **最大动态回撤 (Max Drawdown)** | -12.32% | -25.21% | -5.83% | **-5.41%** | **最大回撤压制至仅 -5.41%** |
-| **盈亏比 (Profit-Loss Ratio)** | 1.60 | 1.58 | 1.81 | **1.82** | **获利单平均盈利显著压制止损单** |
-| **胜率 (Win Rate)** | 37.80% | 39.66% | 40.42% | **41.77%** | **胜率突破 41.7%** |
-| **2024 年度表现** | -2.58% | -0.78% | +2.71% (Sharpe 0.32) | **+8.15% (Sharpe 0.81, MaxDD -5.4%)** | **震荡市收益暴增 3 倍** |
-| **2025 年度表现** | +31.00% | +31.67% | +20.65% (Sharpe 2.29) | **+26.06% (Sharpe 2.73, MaxDD -4.4%)** | **主升浪稳健大赚超 26 万元** |
-| **2026 年度表现** | -8.44% | -20.74% | +5.81% (Sharpe 1.36) | **+5.86% (Sharpe 1.37, MaxDD -3.0%)** | **避开 3 月暴跌，逆势稳健收官** |
+### 缺陷 1：日内大盘前视未来函数（Lookahead Bias）
+代码在计算当日大盘中位数均线状态时，使用了当天全天 15 分钟的收盘价计算当日中位数：
+```python
+daily_mkt = full_df.groupby("trade_date_str").agg({"close": "median"})
+daily_mkt["mkt_bull_ma"] = daily_mkt["mkt_median_price"] >= daily_mkt["mkt_ma20"]
+# 合并回同一天的全部 15 分钟记录
+```
+- **影响**: 早盘 09:45、10:00 的开仓信号间接使用了当天 15:00 收盘价，属于**严重前视偏差**，使原有所有收益率与夏普比率完全失真作废。
+- **整改标准**: 大盘择时指标必须严格滞后至 $T-1$ 交易日，日内仅可使用该时点前可见的历史数据。
+
+### 缺陷 2：样本选择偏差与幸存者偏差（Sample Selection Bias）
+代码在加载转债时，按文件大小降序截取前 100 个文件：
+```python
+valid_cb_files.sort(key=lambda x: os.path.getsize(x), reverse=True)
+target_cb_files = valid_cb_files[:max_cb_files]
+```
+- **影响**: 文件最大代表存续时间最长、交易最活跃、极少早退市或暴雷的标的，引入了强烈的**流动性偏差与幸存者偏差**，不代表 1030 只全市场真实回测。
+
+### 缺陷 3：撮合与执行模型不够真实（Execution Flaws）
+- `next_open` 缺失时回退到当前 `close` 成交（违反严格次周期开盘原则）；
+- 14:45 退出使用当前 bar 价格（同 bar 信号同 bar 成交）；
+- 未对 15 分钟成交量设置严谨参与率限制（单笔 20 万元占 150 万成交额的 13%，固定 2bps 滑点严重失真）。
+
+### 缺陷 4：转股价与强赎生命周期非 PIT（Point-in-Time Gaps）
+- 转股价使用静态 `cb_basic_info.csv`，未追踪历史分红、送配股及下修公告生效日；
+- 强赎过滤仅按单一日期精确匹配 `(cb_code, trade_date) in call_set`，未处理公告后至退市前的完整风险窗口。
 
 ---
 
-## 3. 核心量化因子体系 (Alpha Factor Library)
+## 2. 状态调整与当前可转债配置结论
 
-1. **`delta_imbalance` (理论 Delta 失衡偏离因子，RankIC = +0.0274)**：
-   $$\text{Delta\_Imbalance} = \frac{\text{Stk\_ROC}_1}{1 + \text{Premium}} - \text{CB\_ROC}_1$$
-2. **`mispricing_score` (BS 理论定价错估度因子)**：
-   $$\text{Mispricing} = \frac{V_{\text{BS/Bond}} - P_{\text{market}}}{P_{\text{market}}}$$
-3. **`lead_lag_spread` (基础先行-滞后价差因子，RankIC = +0.0302)**：
-   $$\text{Spread} = \text{Stk\_ROC}_1 - \text{CB\_ROC}_1$$
-4. **`amt_weighted_lead_lag` (机构大单加权先行价差，RankIC = +0.0260)**：
-   引入正股成交额倍数赋权，有效过滤缩量小幅拉升噪音。
+1. **15 分钟同频高频策略**: **当前回测彻底作废，评级 FAIL，严禁实盘**。
+2. **月频双低 Top10 策略**: **维持 Halt & Archive 归档状态**。Sharpe 0.91 低于被动 ETF 511380 (0.95)，且容量公式存在 10 倍错误（`0.5` 误写为 50%）。
+3. **双低跨资产轮动**: **属于纯概念设计（Exploratory），无回测支持，不能实盘**。
 
----
-
-## 4. 避坑指南与工程实操清单 (Pitfalls & Engineering Rules)
-
-- ⚠️ **严禁日频数据跨周期混入高频（未来函数防范）**：正股日频特征必须严格滞后至 $T-1$ 日。
-- ⚠️ **严禁在牛市中用静态估值硬过滤动量**：估值因子宜作为优先排序权重（Soft Score），避免将牛市主升浪中的高 Delta 动量标的误杀。
-- ⚠️ **严格次周期开盘价撮合（Next Open）**：15:00 产生信号只能在次周期开盘买入，绝不能使用当前 Bar 收盘价即时成交。
-- ⚠️ **必须预留双边滑点与佣金（20bps+10bps）**：实测必须扣除万一佣金 + 万二滑点。
-- ⚠️ **代码仓库与复现路径**：
-  - 代码库：[Convertible_Bond_research (GitHub)](https://github.com/liuqi6776/Convertible_Bond_research)
-  - 理论定价引擎：`scripts/cb_pricing_models.py`
-  - 同频回测总控：`run_synchronized_15m_backtest.py`
-  - 核心回测引擎：`scripts/cb_synchronized_backtester.py`
+> **当前最可信的量化配置结论**：  
+> **现有主动可转债策略尚未证明风险调整后优于 511380 ETF，也没有通过实盘准入要求。被动持有 511380 是当前证据支持的最优可转债敞口基准。**
