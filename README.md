@@ -60,6 +60,7 @@
 - [ETF](./ETF/README.md)
   - [A股ETF期权 Max Pain 研究（quant-research）](./ETF/max_pain_etf_options.md) — ⚠️ 候选（少量结论已回测，大部分未验证）
 - [可转债 CB](./CB/README.md)
+  - [可转债 24 因子 AI 策略与 511380 ETF 实证评估（集成信用与退市防火墙）](./CB/cb_stock_15m_lead_lag_strategy.md) — 🔬 探索突破（24 维开源因子库+三大实盘信用防火墙，严格 T+1 Open 撮合，夏普 1.37 超越 511380 ETF 的 1.06，最大回撤 -4.99%）
   - [可转债双低 PIT 策略研究（CB_research）](./CB/double_low_pit_research.md) — ⚠️ 已归档（工程框架 5 轮审计 PASS；策略决议 Halt & Archive）
   - [双低池跨资产轮动框架（设计）](./CB/double_low_rotation.md) — 🔬 探索中
 - [场外基金 FUND](./FUND/README.md)
