@@ -34,6 +34,8 @@ A股股票品类已确认研究成果索引。
 | [tournament_report.md](./tournament_report.md) | **【模型全景比武】严格生产流水线全模型消融比武研究报告**：LightGBM (10/20/42) + LambdaMART (NDCG@40) + PyTorch CUDA LSTM/GRU + True-ENS 跨范式融合 | 🏆 **模型选型定论**（LSTM 单独年化仅 8.05% 未显优势；★ True ENS-Rank-Hybrid 融合跨范式模型实现全场最高年化 13.70%/夏普 0.61/超额中证1000达 +42.2%） |
 | [v5_roe_leakage_audit_report.md](./v5_roe_leakage_audit_report.md) | **【深度专项审计】V5 策略 ROE 财务缺失放行漏洞与持仓机制审计报告**：17% 极低覆盖率 + `isna()` 宽松放行实证 + 164 天低频长持仓机制归因 | ❌ **假阳性定性**（证实 V5-BEST 高收益主要源于数据缺失与小盘高 Beta 弹性，非真实高质量企业 Alpha） |
 | [clean_leverage_im_report.md](./clean_leverage_im_report.md) | **【高胜率杠杆实证】纯净生产账本动态 IM 对冲与不对称加档研究报告**：基差条件化动态对冲 (beta 0.35~0.70) + S1 不对称加档 (1.2x) | 🛡️ **对冲增强定论**（基差动态 IM 对冲将最大回撤从 -40.6% 砍半至 -22.0%，夏普提升 2.5 倍；S1 左侧加杠杆需谨慎） |
+| [consecutive_limit_market_regime_report.md](./consecutive_limit_market_regime_report.md) | **【牛熊市情绪指标】连板股票数量与牛熊市相关性及择时机制研究报告**：全市场连板家数 (>=2板) + 连板高度 + 冰点/沸点非线性分布 + 趋势自适应风控 | 🎯 **牛熊风控定论**（连板指标呈现强烈的“极度冰点杀跌”非线性特征；趋势+连板双引擎将回撤由 -46.7% 压制至 -18.6%，夏普翻倍） |
+
 
 
 
