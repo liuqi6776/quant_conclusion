@@ -45,6 +45,7 @@ A股股票品类已确认研究成果索引。
 | [longterm_2015_2026_report.md](./longterm_2015_2026_report.md) | **【2015–2026 历史压力测试】多资产连板冰点熔断基线 11.3 年全周期长回测研报**：2 档仓位熔断机制 (连板家数<4时降仓) 跨牛熊压力测试 | 🔬 **历史描述性压力测试 (Historical Descriptive Test)**（2015 杠杆牛崩塌期间最大回撤深达 **-67.12%**，证实短线微观连板熔断无法抵御系统性宏观 Beta 暴跌与千股跌停挤兑；撤销“极致防守”与“生产最优”定论） |
 | [sentiment_cycle_report.md](./sentiment_cycle_report.md) | **【短线微观情绪周期消融】五大情绪指标建模与黄金窗口 vs 连续/离散 SCS 预注册消融研报**：真正连续线性 SCS vs 5档离散 SCS vs 六阶段状态机全同口径消融 | ⚠️ **待重验研究候选 (Research Candidate Under Re-verification)**（消融证实：**连续线性 SCS 年化 16.81%/夏普 0.94/回撤 -13.20%** 与 **5 档离散 SCS 年化 16.54%/夏普 0.91** 显著优于复杂六阶段状态机 年化 8.77%/夏普 0.60；状态机低回撤主因平均仓位偏低而非择时优势，推荐向简单 SCS 风险预算回归） |
 | [sentiment_cycle_board_report.md](./sentiment_cycle_board_report.md) | **【情绪周期分板块微观检验】黄金窗口在沪深主板/创业板/科创板/北交所独立实证与流动性约束研报**：各板块独立运行黄金窗口动态控仓与 10% ADV 容量实证 | ⚠️ **待重验研究候选 (Research Candidate Under Re-verification)**（主板专属年化 7.36%/夏普 0.59；双创专属年化 10.22%~11.42%/夏普 0.66~0.69；北交所专属年化 13.96% 但波动 19.34%/回撤 -16.09% 且受制于 10% ADV 微观流动性瓶颈，明确禁止向北交所集中仓位） |
+| [sharpe_enhancement_report.md](./sharpe_enhancement_report.md) | **【第三轮复审整改与净 Sharpe 提升】零标签泄漏 + 成本感知调仓 (1C) + 可投资宽基 ETF 替代对照全景研报**：彻底消除 20日标签成熟期前瞻 (label_available_date < d) + 方案 1C 换手压缩 33.6% 节省税费 5.3 万元 + 宽基 ETF 替代个股负 Alpha (中证1000/500 ETF 夏普提升至 0.79~0.84) + Lo (2002) 稳健推断与时间块 Bootstrap | ⚠️ **待重验研究候选 (Research Candidate Under Re-verification)**（证实：方案 1C 成本感知微调使年化换手压降至 10.3x，夏普提升至 0.42 且抗滑点能力显著增强；个股选股在微盘股危机中产生严重负 Alpha，采用中证1000/500 ETF 替代个股后夏普跃升至 0.79~0.84，回撤收窄至 -10.37%；Bootstrap 证实连续与 5 档 SCS 统计等价） |
 
 
 
