@@ -1,0 +1,140 @@
+{
+  "benchmark_csi1000": {
+    "cagr": 4.33,
+    "sharpe": 0.22,
+    "vol": 25.12,
+    "max_dd": -39.22,
+    "calmar": 0.11,
+    "total_return": 16.88,
+    "win_rate": 53.54,
+    "days": 891,
+    "trades": 0,
+    "fees": 0.0,
+    "annual_returns": {
+      "2023": -8.35,
+      "2024": 1.2,
+      "2025": 27.49,
+      "2026": -1.15
+    }
+  },
+  "ens_hybrid_cs_pure_stock": {
+    "cagr": 5.23,
+    "sharpe": 0.25,
+    "vol": 28.89,
+    "max_dd": -41.65,
+    "calmar": 0.13,
+    "total_return": 20.67,
+    "win_rate": 53.42,
+    "days": 891,
+    "trades": 3359,
+    "fees": 182295.53,
+    "limit_up_rejects": 11,
+    "limit_down_locks": 8,
+    "annual_returns": {
+      "2023": 0.37,
+      "2024": -7.55,
+      "2025": 31.07,
+      "2026": -0.79
+    }
+  },
+  "ens_hybrid_cs_trend_ma20": {
+    "cagr": 4.33,
+    "sharpe": 0.21,
+    "vol": 18.93,
+    "max_dd": -19.99,
+    "calmar": 0.22,
+    "total_return": 16.87,
+    "win_rate": 52.08,
+    "days": 891,
+    "trades": 8116,
+    "fees": 306273.95,
+    "limit_up_rejects": 15,
+    "limit_down_locks": 14,
+    "annual_returns": {
+      "2023": -6.78,
+      "2024": 13.01,
+      "2025": 16.61,
+      "2026": -4.87
+    }
+  },
+  "ens_hybrid_cs_discrete_5tier": {
+    "cagr": 16.32,
+    "sharpe": 0.94,
+    "vol": 15.12,
+    "max_dd": -12.61,
+    "calmar": 1.29,
+    "total_return": 74.46,
+    "win_rate": 53.98,
+    "days": 891,
+    "trades": 17116,
+    "fees": 500023.4,
+    "limit_up_rejects": 31,
+    "limit_down_locks": 15,
+    "annual_returns": {
+      "2023": 11.18,
+      "2024": 39.93,
+      "2025": 13.86,
+      "2026": -1.51
+    }
+  },
+  "ens_hybrid_cs_continuous_scs": {
+    "cagr": 14.75,
+    "sharpe": 0.92,
+    "vol": 13.92,
+    "max_dd": -12.44,
+    "calmar": 1.19,
+    "total_return": 65.94,
+    "win_rate": 54.88,
+    "days": 891,
+    "trades": 21467,
+    "fees": 311994.23,
+    "limit_up_rejects": 45,
+    "limit_down_locks": 18,
+    "annual_returns": {
+      "2023": 10.39,
+      "2024": 35.7,
+      "2025": 13.95,
+      "2026": -2.78
+    }
+  },
+  "ens_hybrid_cs_golden_window": {
+    "cagr": 12.22,
+    "sharpe": 0.93,
+    "vol": 10.85,
+    "max_dd": -10.78,
+    "calmar": 1.13,
+    "total_return": 52.89,
+    "win_rate": 55.56,
+    "days": 891,
+    "trades": 11109,
+    "fees": 259305.41,
+    "limit_up_rejects": 23,
+    "limit_down_locks": 4,
+    "annual_returns": {
+      "2023": 8.38,
+      "2024": 28.25,
+      "2025": 11.87,
+      "2026": -1.68
+    }
+  },
+  "★ ens_hybrid_cs_ultimate_synergy": {
+    "cagr": 13.42,
+    "sharpe": 0.98,
+    "vol": 11.52,
+    "max_dd": -12.15,
+    "calmar": 1.1,
+    "total_return": 58.99,
+    "win_rate": 55.56,
+    "days": 891,
+    "trades": 16279,
+    "fees": 248151.83,
+    "limit_up_rejects": 32,
+    "limit_down_locks": 16,
+    "annual_returns": {
+      "2023": 11.51,
+      "2024": 32.29,
+      "2025": 11.47,
+      "2026": -3.31
+    }
+  }
+}
