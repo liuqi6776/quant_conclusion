@@ -64,9 +64,9 @@
   - [可转债双低 PIT 策略研究（CB_research）](./CB/double_low_pit_research.md) — ⚠️ 已归档（工程框架 5 轮审计 PASS；策略决议 Halt & Archive）
   - [双低池跨资产轮动框架（设计）](./CB/double_low_rotation.md) — 🔬 探索中
 - [场外基金 FUND](./FUND/README.md)
-  - [场外基金 9 资产稳健定投策略：2015-2026 全周期回测与实证审计（quant_system_v2）](./FUND/otc_fund_dca_2015_2026.md) — ⚠️ 候选 / 审计核验通过（11.6 年定投 140 万，期末 306.5 万，净利 +166.5 万，XIRR 12.85%，最大回撤 -14.34%，配备独立开源审计数据与脚本）
-  - [场外基金稳健组合：低相关分散 + 量化/AI 增强（quant_system_v2）](./FUND/otc_fund_stable_portfolio.md) — ⚠️ 候选（完整回测含费用模型；含独立 OOS 检验与 VolTarget7% 动态控仓）
-  - [基金研究教训汇总：4433/择时/凯利/低相关分散/再平衡](./FUND/otc_fund_lessons.md) — ⚠️ 候选（多结论文档，含 ❌ 4大证伪子项与 🔬 探索方向）
+  - [场外基金多资产稳健定投策略：2015-2026 审计修复与全周期实证（quant_system_v2）](./FUND/otc_fund_dca_2015_2026.md) — ⚠️ 候选（11.6 年定投 140 万，期末 298.4 万~302.9 万，XIRR 12.4%~12.7%，TWR 最大回撤 -13.4%~-13.7%，严格成立日隔离与开源数据清单）
+  - [场外基金稳健组合：低相关分散 + 量化/AI 增强（quant_system_v2）](./FUND/otc_fund_stable_portfolio.md) — ⚠️ 候选（100万底仓+月定投，期末 649.9万~662.5万，XIRR 11.8%~12.0%，夏普 0.88~0.91，含 VolTarget7% 动态控仓）
+  - [基金研究教训汇总：4433/择时/凯利/低相关分散/再平衡](./FUND/otc_fund_lessons.md) — ⚠️ 候选（多结论文档，含 ❌ 2大证伪子项与 ⚠️ 3大候选配置规则）
 
 ## 使用规则
 

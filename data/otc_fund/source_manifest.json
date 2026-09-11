@@ -1,0 +1,324 @@
+{
+  "metadata_version": "2.0.0",
+  "description": "Catalog of all OTC funds, benchmarks, and historical proxies with inception dates and provenance",
+  "generated_at": "2026-09-11T16:30:00Z",
+  "trading_calendar": {
+    "start_date": "2015-01-05",
+    "end_date": "2026-08-06",
+    "total_trading_days": 2825
+  },
+  "files": {
+    "fund_true_nav_panel_2015_2026.csv": "fc974d5beb07f39e594570710569e135777da5fa9d692546c839fa7655a191f6",
+    "asset_class_proxy_panel_2015_2026.csv": "cf07be63a806ab14cb655c94d91640f083a300bdb0c5766c885e374eb8650970",
+    "fund_dca_daily_panel_2015_2026.csv": "cf07be63a806ab14cb655c94d91640f083a300bdb0c5766c885e374eb8650970"
+  },
+  "columns": {
+    "bond_pure_000015": {
+      "code": "000015",
+      "name": "华夏纯债债券A",
+      "instrument_type": "mutual_fund",
+      "asset_class": "国内纯债",
+      "is_qdii": false,
+      "inception_date": "2013-03-08",
+      "first_available_date": "2013-03-08",
+      "tradable": true,
+      "sub_fee_rate": 0.0015,
+      "red_fee_tiers": [
+        [
+          7,
+          0.015
+        ],
+        [
+          365,
+          0.005
+        ],
+        [
+          730,
+          0.0025
+        ],
+        [
+          100000,
+          0.0
+        ]
+      ],
+      "has_pre_inception_nan": false,
+      "notes": "优质国内纯债底仓，极低回撤与稳定票息"
+    },
+    "bond_qdii_004998": {
+      "code": "004998",
+      "name": "长信全球债券(QDII)人民币",
+      "instrument_type": "mutual_fund",
+      "asset_class": "全球纯债",
+      "is_qdii": true,
+      "inception_date": "2017-10-10",
+      "first_available_date": "2017-12-11",
+      "tradable": true,
+      "sub_fee_rate": 0.0015,
+      "red_fee_tiers": [
+        [
+          7,
+          0.015
+        ],
+        [
+          365,
+          0.005
+        ],
+        [
+          730,
+          0.0025
+        ],
+        [
+          100000,
+          0.0
+        ]
+      ],
+      "has_pre_inception_nan": true,
+      "notes": "全球投资级债券，平抑人民币单一汇率与利率周期"
+    },
+    "dividend_100032": {
+      "code": "100032",
+      "name": "富国中证红利指数增强A",
+      "instrument_type": "mutual_fund",
+      "asset_class": "红利低波",
+      "is_qdii": false,
+      "inception_date": "2008-11-20",
+      "first_available_date": "2008-12-26",
+      "tradable": true,
+      "sub_fee_rate": 0.0015,
+      "red_fee_tiers": [
+        [
+          7,
+          0.015
+        ],
+        [
+          365,
+          0.005
+        ],
+        [
+          730,
+          0.0025
+        ],
+        [
+          100000,
+          0.0
+        ]
+      ],
+      "has_pre_inception_nan": false,
+      "notes": "高股息增强，防守型权益底仓"
+    },
+    "money_market_000198": {
+      "code": "000198",
+      "name": "天弘余额宝货币",
+      "instrument_type": "mutual_fund",
+      "asset_class": "现金管理",
+      "is_qdii": false,
+      "inception_date": "2013-05-29",
+      "first_available_date": "2013-05-30",
+      "tradable": true,
+      "sub_fee_rate": 0.0,
+      "red_fee_tiers": [
+        [
+          100000,
+          0.0
+        ]
+      ],
+      "has_pre_inception_nan": false,
+      "notes": "流动性现金管理，随时用于逆势补仓"
+    },
+    "quant_a_001917": {
+      "code": "001917",
+      "name": "招商量化精选股票A",
+      "instrument_type": "mutual_fund",
+      "asset_class": "A股量化",
+      "is_qdii": false,
+      "inception_date": "2016-02-18",
+      "first_available_date": "2016-03-15",
+      "tradable": true,
+      "sub_fee_rate": 0.0015,
+      "red_fee_tiers": [
+        [
+          7,
+          0.015
+        ],
+        [
+          365,
+          0.005
+        ],
+        [
+          730,
+          0.0025
+        ],
+        [
+          100000,
+          0.0
+        ]
+      ],
+      "has_pre_inception_nan": true,
+      "notes": "A股多因子量化选股，获取稳定Alpha超额"
+    },
+    "gold_000216": {
+      "code": "000216",
+      "name": "华安黄金易ETF联接A",
+      "instrument_type": "mutual_fund",
+      "asset_class": "现货黄金",
+      "is_qdii": false,
+      "inception_date": "2013-08-08",
+      "first_available_date": "2013-08-22",
+      "tradable": true,
+      "sub_fee_rate": 0.0015,
+      "red_fee_tiers": [
+        [
+          7,
+          0.015
+        ],
+        [
+          365,
+          0.005
+        ],
+        [
+          730,
+          0.0025
+        ],
+        [
+          100000,
+          0.0
+        ]
+      ],
+      "has_pre_inception_nan": false,
+      "notes": "挂钩上海金交所黄金现货合约，零QDII外汇额度占用"
+    },
+    "nasdaq_000834": {
+      "code": "000834",
+      "name": "大成纳斯达克100A",
+      "instrument_type": "mutual_fund",
+      "asset_class": "纳指100",
+      "is_qdii": true,
+      "inception_date": "2014-11-06",
+      "first_available_date": "2014-11-13",
+      "tradable": true,
+      "sub_fee_rate": 0.0015,
+      "red_fee_tiers": [
+        [
+          7,
+          0.015
+        ],
+        [
+          365,
+          0.005
+        ],
+        [
+          730,
+          0.0025
+        ],
+        [
+          100000,
+          0.0
+        ]
+      ],
+      "has_pre_inception_nan": false,
+      "notes": "全球长牛科技指数核心持仓"
+    },
+    "global_tech_017730": {
+      "code": "017730",
+      "name": "嘉实全球产业升级A",
+      "instrument_type": "mutual_fund",
+      "asset_class": "全球科技",
+      "is_qdii": true,
+      "inception_date": "2023-01-30",
+      "first_available_date": "2023-02-09",
+      "tradable": true,
+      "sub_fee_rate": 0.0015,
+      "red_fee_tiers": [
+        [
+          7,
+          0.015
+        ],
+        [
+          365,
+          0.005
+        ],
+        [
+          730,
+          0.0025
+        ],
+        [
+          100000,
+          0.0
+        ]
+      ],
+      "has_pre_inception_nan": true,
+      "notes": "专注全球AI、半导体与尖端科技产业链"
+    },
+    "oil_501018": {
+      "code": "501018",
+      "name": "南方原油A(QDII-FOF)",
+      "instrument_type": "mutual_fund",
+      "asset_class": "大宗原油",
+      "is_qdii": true,
+      "inception_date": "2016-05-17",
+      "first_available_date": "2016-06-15",
+      "tradable": true,
+      "sub_fee_rate": 0.0015,
+      "red_fee_tiers": [
+        [
+          7,
+          0.015
+        ],
+        [
+          365,
+          0.005
+        ],
+        [
+          730,
+          0.0025
+        ],
+        [
+          100000,
+          0.0
+        ]
+      ],
+      "has_pre_inception_nan": true,
+      "notes": "大宗商品原油配置，提供尾部抗通胀对冲"
+    },
+    "proxy_bond_qdii": {
+      "code": "004998",
+      "proxy_code": "000290",
+      "proxy_name": "鹏华全球高收益债(QDII)A",
+      "instrument_type": "research_proxy",
+      "tradable": false,
+      "proxy_start": "2015-01-05",
+      "proxy_end": "2017-12-10",
+      "notes": "004998 成立前的全球美元高等级/高收益债资产类别代理"
+    },
+    "proxy_quant_a": {
+      "code": "001917",
+      "proxy_code": "050002",
+      "proxy_name": "博时裕富沪深300指数基金A",
+      "instrument_type": "research_proxy",
+      "tradable": false,
+      "proxy_start": "2015-01-05",
+      "proxy_end": "2016-03-14",
+      "notes": "001917 成立前的A股Beta基准代理"
+    },
+    "proxy_oil": {
+      "code": "501018",
+      "proxy_code": "160416",
+      "proxy_name": "华安标普全球石油指数(LOF)A",
+      "instrument_type": "research_proxy",
+      "tradable": false,
+      "proxy_start": "2015-01-05",
+      "proxy_end": "2016-06-14",
+      "notes": "501018 成立前的大宗原油/石油资产类别代理"
+    },
+    "proxy_global_tech": {
+      "code": "017730",
+      "proxy_code": "000043",
+      "proxy_name": "嘉实美国成长股票(QDII)",
+      "instrument_type": "research_proxy",
+      "tradable": false,
+      "proxy_start": "2015-01-05",
+      "proxy_end": "2017-01-24",
+      "notes": "017730 成立前的美国与海外成长科技股代理阶段1"
+    }
+  }
+}

@@ -1,0 +1,56 @@
+# Configuration for OTC Fund DCA & Stable Allocation System
+version: "2.0.0"
+backtest_window:
+  start_date: "2015-01-05"
+  end_date: "2026-08-06"
+  common_true_fund_start: "2023-02-09"
+
+fee_model:
+  subscription_fee_rate: 0.0015
+  redemption_tiers:
+    - [7, 0.015]
+    - [365, 0.005]
+    - [730, 0.0025]
+    - [100000, 0.0]
+
+risk_free_rate_annual: 0.02
+trading_days_per_year: 252
+
+portfolios:
+  canonical_9_asset:
+    description: "Canonical 9-Asset Multi-Asset Diversification"
+    weights:
+      bond_pure_000015: 0.15
+      proxy_bond_qdii: 0.10
+      dividend_100032: 0.10
+      money_market_000198: 0.10
+      proxy_quant_a: 0.10
+      gold_000216: 0.15
+      nasdaq_000834: 0.15
+      proxy_global_tech: 0.10
+      proxy_oil: 0.05
+
+  modified_7_asset:
+    description: "Modified 7-Asset Robust Plan (Domestic Bond replaces QDII Bond, Gold replaces Oil)"
+    weights:
+      bond_pure_000015: 0.25
+      dividend_100032: 0.10
+      money_market_000198: 0.10
+      proxy_quant_a: 0.10
+      gold_000216: 0.20
+      nasdaq_000834: 0.15
+      proxy_global_tech: 0.10
+
+scenarios:
+  lump_plus_monthly_dca:
+    initial_lump: 1000000.0
+    dca_amount: 10000.0
+    dca_freq: "monthly"
+  pure_monthly_dca:
+    initial_lump: 0.0
+    dca_amount: 10000.0
+    dca_freq: "monthly"
+  weekly_dca_sensitivity:
+    initial_lump: 0.0
+    dca_amount: 3150.0
+    dca_freq: "weekly"
