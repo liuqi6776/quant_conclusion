@@ -110,7 +110,7 @@ CORE_FUNDS: Dict[str, InstrumentMeta] = {
         inception_date="2014-11-06",
         first_available_date="2014-11-13",
         tradable=True,
-        notes="全球长牛科技指数核心持仓"
+        notes="全球长牛科技指数核心持仓；人民币份额计价（已内生折算USD/CNY汇率），回测假设额度充足"
     ),
     "017730": InstrumentMeta(
         code="017730",
@@ -121,7 +121,7 @@ CORE_FUNDS: Dict[str, InstrumentMeta] = {
         inception_date="2023-01-30",
         first_available_date="2023-02-09",
         tradable=True,
-        notes="专注全球AI、半导体与尖端科技产业链"
+        notes="专注全球AI、半导体与尖端科技产业链；人民币份额计价（已内生折算USD/CNY汇率），回测假设额度充足"
     ),
     "501018": InstrumentMeta(
         code="501018",

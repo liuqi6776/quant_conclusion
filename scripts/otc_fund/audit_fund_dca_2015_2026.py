@@ -116,6 +116,13 @@ def run_audit():
     assert diff_dd <= tolerances["max_drawdown_tolerance"], f"Scenario B MaxDD mismatch: sim={m_b['twr_max_drawdown']:.4f}, exp={exp_b['twr_max_drawdown']:.4f}"
     assert diff_sharpe <= 0.05, f"Scenario B Sharpe mismatch: sim={m_b['sharpe_ratio']:.4f}, exp={exp_b['sharpe_ratio']:.4f}"
     
+    # Check intermediate ledger hash (Q1)
+    sim_ledger_hash_b = hashlib.sha256(df_res_b.to_csv(lineterminator="\n", float_format="%.4f").encode("utf-8")).hexdigest()
+    exp_hash_b = exp_b.get("ledger_hash")
+    if exp_hash_b:
+        assert sim_ledger_hash_b == exp_hash_b, f"Scenario B Intermediate Ledger Hash mismatch: sim={sim_ledger_hash_b} != exp={exp_hash_b}"
+        print(f"   [PASS] Scenario B Ledger Hash : {sim_ledger_hash_b[:16]}... (exact match)")
+        
     print(f"   [PASS] Scenario B Ending Value: {m_b['ending_value']:,.2f} (expected {exp_b['ending_value']:,.2f}, diff {diff_val_rel*100:.3f}%)")
     print(f"   [PASS] Scenario B XIRR        : {m_b['xirr']*100:.2f}% (expected {exp_b['xirr']*100:.2f}%)")
     print(f"   [PASS] Scenario B TWR MaxDD   : {m_b['twr_max_drawdown']*100:.2f}% (expected {exp_b['twr_max_drawdown']*100:.2f}%)")
@@ -139,9 +146,38 @@ def run_audit():
     assert diff_xirr_a <= tolerances["xirr_tolerance"], f"Scenario A XIRR mismatch: sim={m_a['xirr']:.4f}, exp={exp_a['xirr']:.4f}"
     assert diff_dd_a <= tolerances["max_drawdown_tolerance"], f"Scenario A MaxDD mismatch: sim={m_a['twr_max_drawdown']:.4f}, exp={exp_a['twr_max_drawdown']:.4f}"
     
+    # Check intermediate ledger hash for Scenario A
+    sim_ledger_hash_a = hashlib.sha256(df_res_a.to_csv(lineterminator="\n", float_format="%.4f").encode("utf-8")).hexdigest()
+    exp_hash_a = exp_a.get("ledger_hash")
+    if exp_hash_a:
+        assert sim_ledger_hash_a == exp_hash_a, f"Scenario A Intermediate Ledger Hash mismatch: sim={sim_ledger_hash_a} != exp={exp_hash_a}"
+        print(f"   [PASS] Scenario A Ledger Hash : {sim_ledger_hash_a[:16]}... (exact match)")
+        
     print(f"   [PASS] Scenario A Ending Value: {m_a['ending_value']:,.2f} (expected {exp_a['ending_value']:,.2f}, diff {diff_val_rel_a*100:.3f}%)")
     print(f"   [PASS] Scenario A XIRR        : {m_a['xirr']*100:.2f}% (expected {exp_a['xirr']*100:.2f}%)")
     print(f"   [PASS] Scenario A TWR MaxDD   : {m_a['twr_max_drawdown']*100:.2f}% (expected {exp_a['twr_max_drawdown']*100:.2f}%)")
+    
+    # -------------------------------------------------------------
+    # Check 5: Live Counterfactual (No-Active-Fund) Verification (Q3)
+    # -------------------------------------------------------------
+    print("\n5. Executing live Counterfactual (No-Active-Fund) simulation...")
+    weights_no_active = {
+        "bond_pure_000015": 0.25,
+        "dividend_100032": 0.10,
+        "money_market_000198": 0.10,
+        "csi300_fund_050002": 0.10,
+        "gold_000216": 0.20,
+        "nasdaq_000834": 0.25
+    }
+    _, df_res_no_act_b = run_chronological_simulation(dates, df, cfs_b, weights_no_active, sub_fee=0.0015, dividend_events=div_df)
+    m_no_act_b = evaluate_portfolio(df_res_no_act_b["total_asset"], df_res_no_act_b["cumulative_invested"], cfs_b, 0.02)
+    exp_no_act_b = exp_data["scenarios"]["pure_monthly_1w_dca"]["counterfactual_no_active"]
+    diff_val_no_act = abs(m_no_act_b["ending_value"] - exp_no_act_b["ending_value"]) / exp_no_act_b["ending_value"]
+    assert diff_val_no_act <= tolerances["ending_val_rel_tolerance"], "Counterfactual No-Active ending value mismatch"
+    assert abs(m_no_act_b["xirr"] - exp_no_act_b["xirr"]) <= tolerances["xirr_tolerance"], "Counterfactual No-Active XIRR mismatch"
+    print(f"   [PASS] Counterfactual No-Active Ending: {m_no_act_b['ending_value']:,.2f} (expected {exp_no_act_b['ending_value']:,.2f})")
+    print(f"   [PASS] Counterfactual No-Active XIRR  : {m_no_act_b['xirr']*100:.2f}% (expected {exp_no_act_b['xirr']*100:.2f}%)")
+    print(f"   [PASS] Selection Alpha (Active - Passive): {(m_b['xirr'] - m_no_act_b['xirr'])*100:+.2f}%")
     
     print("\n" + "=" * 70)
     print("INSTITUTIONAL AUDIT PASSED: ALL INVARIANTS, HASHES, AND METRICS VERIFIED!")

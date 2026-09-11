@@ -64,6 +64,21 @@ def run_pipeline():
         "money_market_000198": 0.10
     }
     
+    # Counterfactual No-Active Benchmark (Replacing 001917 -> 050002 CSI 300 10%, 017730 -> 000834 Nasdaq 100 10%)
+    weights_no_active = {
+        "bond_pure_000015": 0.25,
+        "dividend_100032": 0.10,
+        "money_market_000198": 0.10,
+        "csi300_fund_050002": 0.10,
+        "gold_000216": 0.20,
+        "nasdaq_000834": 0.25
+    }
+    
+    def calc_ledger_hash(df_res: pd.DataFrame) -> str:
+        import hashlib
+        csv_str = df_res.to_csv(lineterminator="\n", float_format="%.4f")
+        return hashlib.sha256(csv_str.encode("utf-8")).hexdigest()
+    
     # -------------------------------------------------------------
     # Track 1: Scenario A - 100w Lump Sum + 1w/month DCA (240.0w invested)
     # -------------------------------------------------------------
@@ -77,6 +92,11 @@ def run_pipeline():
     # 7-asset
     _, df_res_7_lump = run_chronological_simulation(dates, df_proxy, cfs_lump, weights_7, sub_fee=sub_fee, dividend_events=div_df)
     m_7_lump = evaluate_portfolio(df_res_7_lump["total_asset"], df_res_7_lump["cumulative_invested"], cfs_lump, rf_annual)
+    hash_7_lump = calc_ledger_hash(df_res_7_lump)
+    
+    # Counterfactual No-Active Benchmark
+    _, df_res_no_act_lump = run_chronological_simulation(dates, df_proxy, cfs_lump, weights_no_active, sub_fee=sub_fee, dividend_events=div_df)
+    m_no_act_lump = evaluate_portfolio(df_res_no_act_lump["total_asset"], df_res_no_act_lump["cumulative_invested"], cfs_lump, rf_annual)
     
     # Pure passive broad index benchmark
     _, df_res_pass_lump = run_chronological_simulation(dates, df_proxy, cfs_lump, weights_passive, sub_fee=sub_fee, dividend_events=div_df)
@@ -101,6 +121,11 @@ def run_pipeline():
     
     _, df_res_7_dca = run_chronological_simulation(dates, df_proxy, cfs_dca, weights_7, sub_fee=sub_fee, dividend_events=div_df)
     m_7_dca = evaluate_portfolio(df_res_7_dca["total_asset"], df_res_7_dca["cumulative_invested"], cfs_dca, rf_annual)
+    hash_7_dca = calc_ledger_hash(df_res_7_dca)
+    
+    # Counterfactual No-Active Benchmark
+    _, df_res_no_act_dca = run_chronological_simulation(dates, df_proxy, cfs_dca, weights_no_active, sub_fee=sub_fee, dividend_events=div_df)
+    m_no_act_dca = evaluate_portfolio(df_res_no_act_dca["total_asset"], df_res_no_act_dca["cumulative_invested"], cfs_dca, rf_annual)
     
     _, df_res_pass_dca = run_chronological_simulation(dates, df_proxy, cfs_dca, weights_passive, sub_fee=sub_fee, dividend_events=div_df)
     m_pass_dca = evaluate_portfolio(df_res_pass_dca["total_asset"], df_res_pass_dca["cumulative_invested"], cfs_dca, rf_annual)
@@ -273,7 +298,16 @@ def run_pipeline():
                     "twr_annualized": round(m_7_lump["twr_annualized"], 4),
                     "twr_max_drawdown": round(m_7_lump["twr_max_drawdown"], 4),
                     "custom_capital_ratio_drawdown": round(m_7_lump["custom_capital_ratio_drawdown"], 4),
-                    "sharpe_ratio": round(m_7_lump["sharpe_ratio"], 4)
+                    "sharpe_ratio": round(m_7_lump["sharpe_ratio"], 4),
+                    "ledger_hash": hash_7_lump
+                },
+                "counterfactual_no_active": {
+                    "ending_value": round(m_no_act_lump["ending_value"], 2),
+                    "net_profit": round(m_no_act_lump["net_profit"], 2),
+                    "roi": round(m_no_act_lump["roi"], 4),
+                    "xirr": round(m_no_act_lump["xirr"], 4),
+                    "twr_max_drawdown": round(m_no_act_lump["twr_max_drawdown"], 4),
+                    "sharpe_ratio": round(m_no_act_lump["sharpe_ratio"], 4)
                 },
                 "passive_broad_index": {
                     "ending_value": round(m_pass_lump["ending_value"], 2),
@@ -322,7 +356,16 @@ def run_pipeline():
                     "twr_annualized": round(m_7_dca["twr_annualized"], 4),
                     "twr_max_drawdown": round(m_7_dca["twr_max_drawdown"], 4),
                     "custom_capital_ratio_drawdown": round(m_7_dca["custom_capital_ratio_drawdown"], 4),
-                    "sharpe_ratio": round(m_7_dca["sharpe_ratio"], 4)
+                    "sharpe_ratio": round(m_7_dca["sharpe_ratio"], 4),
+                    "ledger_hash": hash_7_dca
+                },
+                "counterfactual_no_active": {
+                    "ending_value": round(m_no_act_dca["ending_value"], 2),
+                    "net_profit": round(m_no_act_dca["net_profit"], 2),
+                    "roi": round(m_no_act_dca["roi"], 4),
+                    "xirr": round(m_no_act_dca["xirr"], 4),
+                    "twr_max_drawdown": round(m_no_act_dca["twr_max_drawdown"], 4),
+                    "sharpe_ratio": round(m_no_act_dca["sharpe_ratio"], 4)
                 },
                 "passive_broad_index": {
                     "ending_value": round(m_pass_dca["ending_value"], 2),

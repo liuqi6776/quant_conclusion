@@ -45,3 +45,22 @@ def test_chronological_order_zero_lookahead():
         act = res_df["total_asset"].iloc[i]
         assert pytest.approx(act, abs=0.02) == exp, f"Day {i+1} valuation mismatch: actual {act}, expected {exp}"
 
+def test_intermediate_ledger_hash_invariance():
+    """
+    Assert that the daily history dataframe produces a deterministic SHA-256 hash.
+    Any drift in daily shares, cash, or valuation changes the hash.
+    """
+    import hashlib
+    dates = pd.to_datetime(["2021-01-04", "2021-02-01", "2021-03-01", "2021-04-01"])
+    nav_df = pd.DataFrame({"F1": [1.0, 1.05, 1.02, 1.08]}, index=dates)
+    cfs = {dates[0]: 100000.0, dates[1]: 10000.0}
+    weights = {"F1": 1.0}
+    
+    _, res_df1 = run_chronological_simulation(dates, nav_df, cfs, weights, sub_fee=0.0015)
+    _, res_df2 = run_chronological_simulation(dates, nav_df, cfs, weights, sub_fee=0.0015)
+    
+    h1 = hashlib.sha256(res_df1.to_csv(lineterminator="\n", float_format="%.4f").encode("utf-8")).hexdigest()
+    h2 = hashlib.sha256(res_df2.to_csv(lineterminator="\n", float_format="%.4f").encode("utf-8")).hexdigest()
+    assert h1 == h2
+    assert len(h1) == 64
+
