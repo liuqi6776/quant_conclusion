@@ -249,8 +249,42 @@ BENCHMARKS: Dict[str, InstrumentMeta] = {
         tradable=True,
         sub_fee=0.0015,
         notes="场外可直接申购的沪深300指数基金基准"
+    ),
+    "csi300_fund_050002": InstrumentMeta(
+        code="050002",
+        name="博时裕富沪深300指数基金A",
+        asset_class="可投资大盘基准",
+        category="benchmark_investable_fund",
+        is_qdii=False,
+        inception_date="2003-08-26",
+        first_available_date="2003-08-26",
+        tradable=True,
+        sub_fee=0.0015,
+        notes="场外可直接申购的沪深300指数基金基准（重命名以消除指数与基金混淆）"
     )
 }
+
+# Explicit multi-stage lineage for spliced research proxies
+PROXY_LINEAGES = {
+    "proxy_global_tech": [
+        {"stage": 1, "code": "000043", "name": "嘉实美国成长股票(QDII)", "start": "2015-01-05", "end": "2017-01-24"},
+        {"stage": 2, "code": "001668", "name": "汇添富全球移动互联混合(QDII)A", "start": "2017-01-25", "end": "2023-02-08"},
+        {"stage": 3, "code": "017730", "name": "嘉实全球产业升级A(QDII)", "start": "2023-02-09", "end": "2026-08-06"}
+    ],
+    "proxy_bond_qdii": [
+        {"stage": 1, "code": "000290", "name": "鹏华全球高收益债(QDII)A", "start": "2015-01-05", "end": "2017-12-10"},
+        {"stage": 2, "code": "004998", "name": "南方亚洲美元收益债券(QDII)A", "start": "2017-12-11", "end": "2026-08-06"}
+    ],
+    "proxy_quant_a": [
+        {"stage": 1, "code": "050002", "name": "博时裕富沪深300指数基金A", "start": "2015-01-05", "end": "2016-03-14"},
+        {"stage": 2, "code": "001917", "name": "招商量化精选股票A", "start": "2016-03-15", "end": "2026-08-06"}
+    ],
+    "proxy_oil": [
+        {"stage": 1, "code": "160416", "name": "华安标普全球石油指数(LOF)A", "start": "2015-01-05", "end": "2016-06-14"},
+        {"stage": 2, "code": "501018", "name": "南方原油A(QDII-FOF)", "start": "2016-06-15", "end": "2026-08-06"}
+    ]
+}
+
 
 # Verified Valid Replacement Funds (Correcting errors such as 001594 bank ETF connect)
 REPLACEMENT_RULES = {

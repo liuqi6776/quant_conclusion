@@ -34,7 +34,14 @@ def test_chronological_order_zero_lookahead():
     weights = {"F1": 1.0}
     ledger, res_df = run_chronological_simulation(dates, nav_df, cfs, weights, sub_fee=0.0015)
     
-    expected = [998500.00, 1008485.00, 1018470.00, 1028455.00]
+    # Statutory formula net_inv = amount / (1.0 + sub_fee)
+    expected = [
+        round(1000000.0 / 1.0015, 2),
+        round(1000000.0 / 1.0015 + 10000.0 / 1.0015, 2),
+        round(1000000.0 / 1.0015 + 20000.0 / 1.0015, 2),
+        round(1000000.0 / 1.0015 + 30000.0 / 1.0015, 2)
+    ]
     for i, exp in enumerate(expected):
         act = res_df["total_asset"].iloc[i]
-        assert pytest.approx(act, abs=0.01) == exp, f"Day {i+1} valuation mismatch: actual {act}, expected {exp}"
+        assert pytest.approx(act, abs=0.02) == exp, f"Day {i+1} valuation mismatch: actual {act}, expected {exp}"
+

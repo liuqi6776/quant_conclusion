@@ -17,12 +17,16 @@ DEFAULT_SUB_FEE = 0.0015  # 0.15% subscription fee on 3rd-party platforms
 def calc_sub_fee(amount: float, sub_fee_rate: float = DEFAULT_SUB_FEE) -> Tuple[float, float]:
     """
     Given total subscription cash amount, return (net_investment, fee).
-    net_investment = amount / (1 + sub_fee_rate) or amount * (1 - sub_fee_rate) standard approximation.
-    In OTC platform convention: net_investment = amount * (1 - sub_fee_rate).
+    Standard statutory formula for Chinese mutual fund platforms:
+    net_investment = amount / (1.0 + sub_fee_rate)
+    fee = amount - net_investment
     """
-    fee = amount * sub_fee_rate
-    net_inv = amount - fee
+    if sub_fee_rate <= 0:
+        return amount, 0.0
+    net_inv = amount / (1.0 + sub_fee_rate)
+    fee = amount - net_inv
     return net_inv, fee
+
 
 def get_redemption_fee_rate(holding_days: int) -> float:
     """Standard tiered redemption fee based on holding days."""

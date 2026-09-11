@@ -5,7 +5,8 @@ Reproducible OTC Fund & Benchmark Panel Builder
 Builds clean, standardized, verifiable daily panels:
 1. fund_true_nav_panel_2015_2026: Strict inception dates; pre-inception is strictly NaN.
 2. asset_class_proxy_panel_2015_2026: Continuous spliced historical proxies with transparent lineage.
-3. source_manifest.json: Complete machine-readable data audit catalog.
+3. dividend_events.csv: Machine-readable record of all fund cash distribution events.
+4. source_manifest.json: Complete machine-readable data audit catalog with verified file hashes.
 
 Usage:
   python scripts/otc_fund/build_fund_panel.py [--offline-raw <PATH>] [--out-dir <PATH>]
@@ -16,7 +17,7 @@ import sys
 import json
 import hashlib
 import argparse
-from typing import Dict, Any
+from typing import Dict, Any, List
 import numpy as np
 import pandas as pd
 
@@ -26,13 +27,14 @@ DEFAULT_RAW_DIR = r"D:\iquant_data\data_v2\fund2\nav"
 DEFAULT_OUT_DIR = os.path.join(REPO_ROOT, "data", "otc_fund")
 PROCESSED_DIR = os.path.join(DEFAULT_OUT_DIR, "processed")
 
-from instruments import CORE_FUNDS, RESEARCH_PROXIES, BENCHMARKS
+sys.path.insert(0, REPO_ROOT)
+from scripts.otc_fund.instruments import CORE_FUNDS, RESEARCH_PROXIES, BENCHMARKS, PROXY_LINEAGES
 
 START_DATE = "2015-01-05"
 END_DATE = "2026-08-06"
 
 def get_file_hash(filepath: str) -> str:
-    """Calculate SHA-256 hash of a file."""
+    """Calculate SHA-256 hash of a file on disk."""
     if not os.path.exists(filepath):
         return ""
     h = hashlib.sha256()
@@ -44,7 +46,7 @@ def get_file_hash(filepath: str) -> str:
 def load_fund_raw_nav(raw_dir: str, code: str) -> pd.Series:
     """Load raw unit_nav from local parquet or synthesize money market if 000198."""
     if code == "000198":
-        # Money market fund: 2.0% annualized compounding unit NAV
+        # Money market fund: 2.0% annualized compounding unit NAV benchmark
         idx = pd.date_range("2014-01-01", END_DATE, freq="D")
         s = pd.Series((1.02 ** (1.0 / 365.0)) ** np.arange(len(idx)), index=idx)
         return s
@@ -59,6 +61,21 @@ def load_fund_raw_nav(raw_dir: str, code: str) -> pd.Series:
     s = s[~s.index.duplicated(keep="last")].sort_index()
     return s
 
+def extract_raw_fund_dividends(raw_dir: str, code: str, start_date: str, end_date: str) -> pd.DataFrame:
+    """Detect dividend distributions where D_t = prev_nav * (1 + pct_chg/100) - unit_nav > 0.005."""
+    p = os.path.join(raw_dir, f"{code}.parquet")
+    if not os.path.exists(p):
+        return pd.DataFrame(columns=["date", "code", "dividend_per_share", "unit_nav"])
+    df = pd.read_parquet(p, columns=["date", "unit_nav", "pct_chg"])
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.sort_values("date").reset_index(drop=True)
+    df["prev_nav"] = df["unit_nav"].shift(1)
+    df["implied_nav"] = df["prev_nav"] * (1.0 + df["pct_chg"] / 100.0)
+    df["div"] = (df["implied_nav"] - df["unit_nav"]).round(4)
+    divs = df[(df["div"] > 0.005) & (df["date"] >= start_date) & (df["date"] <= end_date)].copy()
+    divs["code"] = code
+    return divs.rename(columns={"div": "dividend_per_share"})[["date", "code", "dividend_per_share", "unit_nav"]]
+
 def build_panels(raw_dir: str, out_dir: str):
     os.makedirs(PROCESSED_DIR, exist_ok=True)
     
@@ -71,33 +88,29 @@ def build_panels(raw_dir: str, out_dir: str):
     true_df = pd.DataFrame(index=calendar)
     
     # Load benchmarks
-    # SH index from 000015 base calendar (we can load benchmark from existing or calculate)
     sh_index_src = os.path.join(DEFAULT_OUT_DIR, "fund_dca_daily_panel_2015_2026.csv")
     existing_df = pd.read_csv(sh_index_src, index_col=0, parse_dates=True) if os.path.exists(sh_index_src) else None
     
     if existing_df is not None and "sh_index_000001" in existing_df.columns:
         true_df["sh_index_000001"] = existing_df["sh_index_000001"].reindex(calendar).ffill()
     else:
-        true_df["sh_index_000001"] = 3200.0 # fallback
+        true_df["sh_index_000001"] = 3200.0
         
     true_df["fund_050002"] = load_fund_raw_nav(raw_dir, "050002").reindex(calendar).ffill()
     
     for code, meta in CORE_FUNDS.items():
         col_name = f"{meta.category}_{code}"
         s = load_fund_raw_nav(raw_dir, code)
-        # Strictly truncate before first_available_date!
         s_clean = s.copy()
         s_clean[s_clean.index < pd.Timestamp(meta.first_available_date)] = np.nan
         true_df[col_name] = s_clean.reindex(calendar)
-        # Note: Do NOT ffill across pre-inception!
-        # Only ffill within active lifecycle for missing holiday/reporting gap
         active_mask = true_df.index >= pd.Timestamp(meta.first_available_date)
         true_df.loc[active_mask, col_name] = true_df.loc[active_mask, col_name].ffill()
         
     # Step 3: Build Asset Class Research Proxy Panel (Continuous Spliced Series)
     proxy_df = pd.DataFrame(index=calendar)
     proxy_df["sh_index_000001"] = true_df["sh_index_000001"]
-    proxy_df["csi300_price_index"] = true_df["fund_050002"]
+    proxy_df["csi300_fund_050002"] = true_df["fund_050002"]  # Renamed from csi300_price_index to csi300_fund_050002
     proxy_df["bond_pure_000015"] = true_df["bond_pure_000015"]
     proxy_df["dividend_100032"] = true_df["dividend_100032"]
     proxy_df["money_market_000198"] = true_df["money_market_000198"]
@@ -150,31 +163,150 @@ def build_panels(raw_dir: str, out_dir: str):
     proxy_tech[calendar >= switch_tech2] = s_017730[calendar >= switch_tech2].ffill()
     proxy_df["proxy_global_tech"] = proxy_tech
     
-    # Save CSV and Parquet
+    # Step 4: Extract and Build Dividend Events Table
+    dividend_records: List[Dict[str, Any]] = []
+    
+    # 100032
+    d_100032 = extract_raw_fund_dividends(raw_dir, "100032", START_DATE, END_DATE)
+    for _, r in d_100032.iterrows():
+        dividend_records.append({
+            "date": r["date"].strftime("%Y-%m-%d"),
+            "code": "100032",
+            "target_column": "dividend_100032",
+            "dividend_per_share": float(r["dividend_per_share"]),
+            "unit_nav": float(r["unit_nav"])
+        })
+        
+    # 000015
+    d_000015 = extract_raw_fund_dividends(raw_dir, "000015", START_DATE, END_DATE)
+    for _, r in d_000015.iterrows():
+        dividend_records.append({
+            "date": r["date"].strftime("%Y-%m-%d"),
+            "code": "000015",
+            "target_column": "bond_pure_000015",
+            "dividend_per_share": float(r["dividend_per_share"]),
+            "unit_nav": float(r["unit_nav"])
+        })
+        
+    # 000834
+    d_000834 = extract_raw_fund_dividends(raw_dir, "000834", START_DATE, END_DATE)
+    for _, r in d_000834.iterrows():
+        dividend_records.append({
+            "date": r["date"].strftime("%Y-%m-%d"),
+            "code": "000834",
+            "target_column": "nasdaq_000834",
+            "dividend_per_share": float(r["dividend_per_share"]),
+            "unit_nav": float(r["unit_nav"])
+        })
+        
+    # 001917
+    d_001917 = extract_raw_fund_dividends(raw_dir, "001917", START_DATE, END_DATE)
+    for _, r in d_001917.iterrows():
+        dividend_records.append({
+            "date": r["date"].strftime("%Y-%m-%d"),
+            "code": "001917",
+            "target_column": "proxy_quant_a",
+            "dividend_per_share": float(r["dividend_per_share"]),
+            "unit_nav": float(r["unit_nav"])
+        })
+        dividend_records.append({
+            "date": r["date"].strftime("%Y-%m-%d"),
+            "code": "001917",
+            "target_column": "quant_a_001917",
+            "dividend_per_share": float(r["dividend_per_share"]),
+            "unit_nav": float(r["unit_nav"])
+        })
+        
+    # 501018
+    d_501018 = extract_raw_fund_dividends(raw_dir, "501018", START_DATE, END_DATE)
+    for _, r in d_501018.iterrows():
+        dividend_records.append({
+            "date": r["date"].strftime("%Y-%m-%d"),
+            "code": "501018",
+            "target_column": "proxy_oil",
+            "dividend_per_share": float(r["dividend_per_share"]),
+            "unit_nav": float(r["unit_nav"])
+        })
+        dividend_records.append({
+            "date": r["date"].strftime("%Y-%m-%d"),
+            "code": "501018",
+            "target_column": "oil_501018",
+            "dividend_per_share": float(r["dividend_per_share"]),
+            "unit_nav": float(r["unit_nav"])
+        })
+        
+    # 050002
+    d_050002 = extract_raw_fund_dividends(raw_dir, "050002", START_DATE, END_DATE)
+    for _, r in d_050002.iterrows():
+        dividend_records.append({
+            "date": r["date"].strftime("%Y-%m-%d"),
+            "code": "050002",
+            "target_column": "csi300_fund_050002",
+            "dividend_per_share": float(r["dividend_per_share"]),
+            "unit_nav": float(r["unit_nav"])
+        })
+        dividend_records.append({
+            "date": r["date"].strftime("%Y-%m-%d"),
+            "code": "050002",
+            "target_column": "fund_050002",
+            "dividend_per_share": float(r["dividend_per_share"]),
+            "unit_nav": float(r["unit_nav"])
+        })
+        if r["date"] < switch_quant:
+            dividend_records.append({
+                "date": r["date"].strftime("%Y-%m-%d"),
+                "code": "050002",
+                "target_column": "proxy_quant_a",
+                "dividend_per_share": round(float(r["dividend_per_share"]) * ratio_quant, 4),
+                "unit_nav": round(float(r["unit_nav"]) * ratio_quant, 4)
+            })
+            
+    # 000290 (QDII Bond Stage 1)
+    d_000290 = extract_raw_fund_dividends(raw_dir, "000290", START_DATE, END_DATE)
+    for _, r in d_000290.iterrows():
+        if r["date"] < switch_qdii_bond:
+            dividend_records.append({
+                "date": r["date"].strftime("%Y-%m-%d"),
+                "code": "000290",
+                "target_column": "proxy_bond_qdii",
+                "dividend_per_share": round(float(r["dividend_per_share"]) * ratio_qdii, 4),
+                "unit_nav": round(float(r["unit_nav"]) * ratio_qdii, 4)
+            })
+            
+    df_div = pd.DataFrame(dividend_records).sort_values(["date", "target_column"]).reset_index(drop=True)
+    div_csv = os.path.join(DEFAULT_OUT_DIR, "dividend_events.csv")
+    df_div.to_csv(div_csv, index=False, lineterminator="\n")
+    print(f"[OK] Saved dividend events: {div_csv} ({len(df_div)} events)")
+    
+    # Save CSV and Parquet panels with explicit newline="\n"
     true_csv = os.path.join(PROCESSED_DIR, "fund_true_nav_panel_2015_2026.csv")
     true_parquet = os.path.join(PROCESSED_DIR, "fund_true_nav_panel_2015_2026.parquet")
-    true_df.to_csv(true_csv)
+    true_df.to_csv(true_csv, lineterminator="\n")
     true_df.to_parquet(true_parquet)
     print(f"[OK] Saved true fund panel: {true_csv} ({true_df.shape})")
     
     proxy_csv = os.path.join(PROCESSED_DIR, "asset_class_proxy_panel_2015_2026.csv")
     proxy_parquet = os.path.join(PROCESSED_DIR, "asset_class_proxy_panel_2015_2026.parquet")
-    proxy_df.to_csv(proxy_csv)
+    proxy_df.to_csv(proxy_csv, lineterminator="\n")
     proxy_df.to_parquet(proxy_parquet)
     print(f"[OK] Saved proxy panel: {proxy_csv} ({proxy_df.shape})")
     
-    # Also save standard root CSV in data/otc_fund/ for baseline compatibility with clear column names
+    # Save standard root CSV in data/otc_fund/
     root_csv = os.path.join(DEFAULT_OUT_DIR, "fund_dca_daily_panel_2015_2026.csv")
     root_parquet = os.path.join(DEFAULT_OUT_DIR, "fund_dca_daily_panel_2015_2026.parquet")
-    proxy_df.to_csv(root_csv)
+    proxy_df.to_csv(root_csv, lineterminator="\n")
     proxy_df.to_parquet(root_parquet)
     print(f"[OK] Updated root panel: {root_csv}")
     
-    # Step 4: Generate source_manifest.json
+    # Step 5: Generate source_manifest.json with guaranteed matching SHA-256 hashes
     manifest = {
-        "metadata_version": "2.0.0",
-        "description": "Catalog of all OTC funds, benchmarks, and historical proxies with inception dates and provenance",
-        "generated_at": "2026-09-11T16:30:00Z",
+        "metadata_version": "2.1.0",
+        "description": "Catalog of all OTC funds, benchmarks, historical proxies, and dividend events with complete audit hashes and lineage",
+        "data_availability": {
+            "raw_database": "private (local institutional parquet archive)",
+            "bundled_panels": "public (reproducible daily panels committed in repository under data/otc_fund/)"
+        },
+        "generated_at": pd.Timestamp.now().isoformat(),
         "trading_calendar": {
             "start_date": START_DATE,
             "end_date": END_DATE,
@@ -183,12 +315,14 @@ def build_panels(raw_dir: str, out_dir: str):
         "files": {
             "fund_true_nav_panel_2015_2026.csv": get_file_hash(true_csv),
             "asset_class_proxy_panel_2015_2026.csv": get_file_hash(proxy_csv),
-            "fund_dca_daily_panel_2015_2026.csv": get_file_hash(root_csv)
+            "fund_dca_daily_panel_2015_2026.csv": get_file_hash(root_csv),
+            "dividend_events.csv": get_file_hash(div_csv)
         },
+        "proxy_lineages": PROXY_LINEAGES,
         "columns": {}
     }
     
-    # Fill manifest column details
+    # Register core funds
     for code, meta in CORE_FUNDS.items():
         col = f"{meta.category}_{code}"
         manifest["columns"][col] = {
@@ -206,27 +340,41 @@ def build_panels(raw_dir: str, out_dir: str):
             "notes": meta.notes
         }
         
-    for p_col, p_meta in [
-        ("proxy_bond_qdii", RESEARCH_PROXIES["000290"]),
-        ("proxy_quant_a", RESEARCH_PROXIES["050002"]),
-        ("proxy_oil", RESEARCH_PROXIES["160416"]),
-        ("proxy_global_tech", RESEARCH_PROXIES["000043"])
-    ]:
+    # Register benchmarks
+    manifest["columns"]["sh_index_000001"] = {
+        "code": "000001.SH",
+        "name": "上证综合指数(价格指数)",
+        "instrument_type": "price_index",
+        "asset_class": "市场理论价格基准",
+        "is_qdii": False,
+        "tradable": False,
+        "sub_fee_rate": 0.0,
+        "notes": "A股大盘代表性纯价格指数，不可直接申购，且未包含成分股分红再投资（年均漏计约2.0%分红）"
+    }
+    manifest["columns"]["csi300_fund_050002"] = {
+        "code": "050002",
+        "name": "博时裕富沪深300指数基金A",
+        "instrument_type": "index_fund",
+        "asset_class": "可投资大盘基准",
+        "is_qdii": False,
+        "tradable": True,
+        "sub_fee_rate": 0.0015,
+        "notes": "场外可直接申购的沪深300指数基金，重命名消除指数与基金混淆"
+    }
+    
+    # Register proxies with multi-stage lineage
+    for p_col, lineage in PROXY_LINEAGES.items():
         manifest["columns"][p_col] = {
-            "code": p_meta.proxy_for,
-            "proxy_code": p_meta.code,
-            "proxy_name": p_meta.name,
             "instrument_type": "research_proxy",
             "tradable": False,
-            "proxy_start": p_meta.proxy_start,
-            "proxy_end": p_meta.proxy_end,
-            "notes": p_meta.notes
+            "lineage_stages": lineage,
+            "notes": f"研究用连续拼接历史代理序列，包含 {len(lineage)} 个生命周期阶段"
         }
         
     manifest_path = os.path.join(DEFAULT_OUT_DIR, "source_manifest.json")
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
-    print(f"[OK] Wrote source manifest: {manifest_path}")
+    print(f"[OK] Wrote source manifest with verified hashes: {manifest_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

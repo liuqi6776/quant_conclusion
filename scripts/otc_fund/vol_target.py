@@ -77,6 +77,10 @@ def run_vol_target_simulation(trading_dates: pd.DatetimeIndex,
             
             # Scaled weights
             scaled_weights = {c: w * multiplier for c, w in base_weights.items()}
+            # Credit residual unallocated weight to money market cash buffer
+            residual_w = max(0.0, 1.0 - sum(scaled_weights.values()))
+            if "money_market_000198" in nav_df.columns and residual_w > 0:
+                scaled_weights["money_market_000198"] = scaled_weights.get("money_market_000198", 0.0) + residual_w
             
             # Rebalance: sell overweighted
             for code, target_w in scaled_weights.items():

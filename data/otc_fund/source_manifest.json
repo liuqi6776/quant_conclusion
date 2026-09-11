@@ -1,16 +1,94 @@
 {
-  "metadata_version": "2.0.0",
-  "description": "Catalog of all OTC funds, benchmarks, and historical proxies with inception dates and provenance",
-  "generated_at": "2026-09-11T16:30:00Z",
+  "metadata_version": "2.1.0",
+  "description": "Catalog of all OTC funds, benchmarks, historical proxies, and dividend events with complete audit hashes and lineage",
+  "data_availability": {
+    "raw_database": "private (local institutional parquet archive)",
+    "bundled_panels": "public (reproducible daily panels committed in repository under data/otc_fund/)"
+  },
+  "generated_at": "2026-09-11T21:46:45.684014",
   "trading_calendar": {
     "start_date": "2015-01-05",
     "end_date": "2026-08-06",
     "total_trading_days": 2825
   },
   "files": {
-    "fund_true_nav_panel_2015_2026.csv": "fc974d5beb07f39e594570710569e135777da5fa9d692546c839fa7655a191f6",
-    "asset_class_proxy_panel_2015_2026.csv": "cf07be63a806ab14cb655c94d91640f083a300bdb0c5766c885e374eb8650970",
-    "fund_dca_daily_panel_2015_2026.csv": "cf07be63a806ab14cb655c94d91640f083a300bdb0c5766c885e374eb8650970"
+    "fund_true_nav_panel_2015_2026.csv": "8093be796b4b231b934d4fbff0d3edb76548342990abe3623b62c27dfe0f265e",
+    "asset_class_proxy_panel_2015_2026.csv": "f7dc29ebe24f9790e260f980b312b09e7e2faca002148e54a0b69dc0c1e009d5",
+    "fund_dca_daily_panel_2015_2026.csv": "f7dc29ebe24f9790e260f980b312b09e7e2faca002148e54a0b69dc0c1e009d5",
+    "dividend_events.csv": "763e072f3bfeb3f161a9d93de7ce9ce57e3ab6d0a4ec03a5e30b42722778b83c"
+  },
+  "proxy_lineages": {
+    "proxy_global_tech": [
+      {
+        "stage": 1,
+        "code": "000043",
+        "name": "嘉实美国成长股票(QDII)",
+        "start": "2015-01-05",
+        "end": "2017-01-24"
+      },
+      {
+        "stage": 2,
+        "code": "001668",
+        "name": "汇添富全球移动互联混合(QDII)A",
+        "start": "2017-01-25",
+        "end": "2023-02-08"
+      },
+      {
+        "stage": 3,
+        "code": "017730",
+        "name": "嘉实全球产业升级A(QDII)",
+        "start": "2023-02-09",
+        "end": "2026-08-06"
+      }
+    ],
+    "proxy_bond_qdii": [
+      {
+        "stage": 1,
+        "code": "000290",
+        "name": "鹏华全球高收益债(QDII)A",
+        "start": "2015-01-05",
+        "end": "2017-12-10"
+      },
+      {
+        "stage": 2,
+        "code": "004998",
+        "name": "南方亚洲美元收益债券(QDII)A",
+        "start": "2017-12-11",
+        "end": "2026-08-06"
+      }
+    ],
+    "proxy_quant_a": [
+      {
+        "stage": 1,
+        "code": "050002",
+        "name": "博时裕富沪深300指数基金A",
+        "start": "2015-01-05",
+        "end": "2016-03-14"
+      },
+      {
+        "stage": 2,
+        "code": "001917",
+        "name": "招商量化精选股票A",
+        "start": "2016-03-15",
+        "end": "2026-08-06"
+      }
+    ],
+    "proxy_oil": [
+      {
+        "stage": 1,
+        "code": "160416",
+        "name": "华安标普全球石油指数(LOF)A",
+        "start": "2015-01-05",
+        "end": "2016-06-14"
+      },
+      {
+        "stage": 2,
+        "code": "501018",
+        "name": "南方原油A(QDII-FOF)",
+        "start": "2016-06-15",
+        "end": "2026-08-06"
+      }
+    ]
   },
   "columns": {
     "bond_pure_000015": {
@@ -280,45 +358,116 @@
       "has_pre_inception_nan": true,
       "notes": "大宗商品原油配置，提供尾部抗通胀对冲"
     },
-    "proxy_bond_qdii": {
-      "code": "004998",
-      "proxy_code": "000290",
-      "proxy_name": "鹏华全球高收益债(QDII)A",
-      "instrument_type": "research_proxy",
+    "sh_index_000001": {
+      "code": "000001.SH",
+      "name": "上证综合指数(价格指数)",
+      "instrument_type": "price_index",
+      "asset_class": "市场理论价格基准",
+      "is_qdii": false,
       "tradable": false,
-      "proxy_start": "2015-01-05",
-      "proxy_end": "2017-12-10",
-      "notes": "004998 成立前的全球美元高等级/高收益债资产类别代理"
+      "sub_fee_rate": 0.0,
+      "notes": "A股大盘代表性纯价格指数，不可直接申购，且未包含成分股分红再投资（年均漏计约2.0%分红）"
     },
-    "proxy_quant_a": {
-      "code": "001917",
-      "proxy_code": "050002",
-      "proxy_name": "博时裕富沪深300指数基金A",
-      "instrument_type": "research_proxy",
-      "tradable": false,
-      "proxy_start": "2015-01-05",
-      "proxy_end": "2016-03-14",
-      "notes": "001917 成立前的A股Beta基准代理"
-    },
-    "proxy_oil": {
-      "code": "501018",
-      "proxy_code": "160416",
-      "proxy_name": "华安标普全球石油指数(LOF)A",
-      "instrument_type": "research_proxy",
-      "tradable": false,
-      "proxy_start": "2015-01-05",
-      "proxy_end": "2016-06-14",
-      "notes": "501018 成立前的大宗原油/石油资产类别代理"
+    "csi300_fund_050002": {
+      "code": "050002",
+      "name": "博时裕富沪深300指数基金A",
+      "instrument_type": "index_fund",
+      "asset_class": "可投资大盘基准",
+      "is_qdii": false,
+      "tradable": true,
+      "sub_fee_rate": 0.0015,
+      "notes": "场外可直接申购的沪深300指数基金，重命名消除指数与基金混淆"
     },
     "proxy_global_tech": {
-      "code": "017730",
-      "proxy_code": "000043",
-      "proxy_name": "嘉实美国成长股票(QDII)",
       "instrument_type": "research_proxy",
       "tradable": false,
-      "proxy_start": "2015-01-05",
-      "proxy_end": "2017-01-24",
-      "notes": "017730 成立前的美国与海外成长科技股代理阶段1"
+      "lineage_stages": [
+        {
+          "stage": 1,
+          "code": "000043",
+          "name": "嘉实美国成长股票(QDII)",
+          "start": "2015-01-05",
+          "end": "2017-01-24"
+        },
+        {
+          "stage": 2,
+          "code": "001668",
+          "name": "汇添富全球移动互联混合(QDII)A",
+          "start": "2017-01-25",
+          "end": "2023-02-08"
+        },
+        {
+          "stage": 3,
+          "code": "017730",
+          "name": "嘉实全球产业升级A(QDII)",
+          "start": "2023-02-09",
+          "end": "2026-08-06"
+        }
+      ],
+      "notes": "研究用连续拼接历史代理序列，包含 3 个生命周期阶段"
+    },
+    "proxy_bond_qdii": {
+      "instrument_type": "research_proxy",
+      "tradable": false,
+      "lineage_stages": [
+        {
+          "stage": 1,
+          "code": "000290",
+          "name": "鹏华全球高收益债(QDII)A",
+          "start": "2015-01-05",
+          "end": "2017-12-10"
+        },
+        {
+          "stage": 2,
+          "code": "004998",
+          "name": "南方亚洲美元收益债券(QDII)A",
+          "start": "2017-12-11",
+          "end": "2026-08-06"
+        }
+      ],
+      "notes": "研究用连续拼接历史代理序列，包含 2 个生命周期阶段"
+    },
+    "proxy_quant_a": {
+      "instrument_type": "research_proxy",
+      "tradable": false,
+      "lineage_stages": [
+        {
+          "stage": 1,
+          "code": "050002",
+          "name": "博时裕富沪深300指数基金A",
+          "start": "2015-01-05",
+          "end": "2016-03-14"
+        },
+        {
+          "stage": 2,
+          "code": "001917",
+          "name": "招商量化精选股票A",
+          "start": "2016-03-15",
+          "end": "2026-08-06"
+        }
+      ],
+      "notes": "研究用连续拼接历史代理序列，包含 2 个生命周期阶段"
+    },
+    "proxy_oil": {
+      "instrument_type": "research_proxy",
+      "tradable": false,
+      "lineage_stages": [
+        {
+          "stage": 1,
+          "code": "160416",
+          "name": "华安标普全球石油指数(LOF)A",
+          "start": "2015-01-05",
+          "end": "2016-06-14"
+        },
+        {
+          "stage": 2,
+          "code": "501018",
+          "name": "南方原油A(QDII-FOF)",
+          "start": "2016-06-15",
+          "end": "2026-08-06"
+        }
+      ],
+      "notes": "研究用连续拼接历史代理序列，包含 2 个生命周期阶段"
     }
   }
 }

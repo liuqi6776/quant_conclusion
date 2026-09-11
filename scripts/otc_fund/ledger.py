@@ -9,7 +9,7 @@ Guarantees:
 4. Explicit handling of cash dividends and dividend reinvestment with verified continuity.
 5. FIFO redemption fee lot tracking.
 """
-
+import os
 from typing import Dict, List, Tuple, Optional, Any
 import pandas as pd
 import numpy as np
@@ -153,17 +153,30 @@ def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
                                  cashflow_schedule: Dict[pd.Timestamp, float],
                                  target_weights: Dict[str, float],
                                  sub_fee: float = 0.0015,
-                                 rebalance_freq: Optional[str] = None) -> Tuple[ForwardLedger, pd.DataFrame]:
+                                 rebalance_freq: Optional[str] = None,
+                                 dividend_events: Optional[pd.DataFrame] = None) -> Tuple[ForwardLedger, pd.DataFrame]:
     """
     Strict single-pass chronological simulation.
     Iterates day by day:
-    1. Cash deposit on dt if scheduled.
-    2. Buy / allocate on dt using known unit_nav.
-    3. Rebalance if scheduled.
-    4. Record closing valuation.
+    1. Process dividends for existing held lots (reinvested at ex-nav with 0 fee).
+    2. Cash deposit on dt if scheduled.
+    3. Buy / allocate on dt using known unit_nav.
+    4. Rebalance if scheduled.
+    5. Record closing valuation.
     """
     ledger = ForwardLedger()
     
+    # Auto-load dividend events if not explicitly passed
+    if dividend_events is None:
+        div_csv = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "otc_fund", "dividend_events.csv")
+        if os.path.exists(div_csv):
+            dividend_events = pd.read_csv(div_csv, parse_dates=["date"])
+            
+    div_map = {}
+    if dividend_events is not None and not dividend_events.empty:
+        for dt_val, grp in dividend_events.groupby(pd.to_datetime(dividend_events["date"])):
+            div_map[pd.Timestamp(dt_val)] = grp
+            
     # Pre-identify rebalancing dates if periodic rebalance enabled
     rebal_dates = set()
     if rebalance_freq == "quarterly":
@@ -171,6 +184,17 @@ def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
             rebal_dates.add(grp.index[0])
             
     for dt in trading_dates:
+        # Step 0: Process dividend events for existing holdings as of day start
+        if dt in div_map:
+            grp = div_map[dt]
+            for _, row in grp.iterrows():
+                tgt_col = str(row.get("target_column") or row.get("code"))
+                div_amt = float(row["dividend_per_share"])
+                if ledger.get_shares(tgt_col) > 0:
+                    px = nav_df.loc[dt, tgt_col] if tgt_col in nav_df.columns else np.nan
+                    if np.isfinite(px) and px > 0:
+                        ledger.process_dividend(tgt_col, dt, px, div_amt, mode="reinvest")
+                        
         # Step 1: Check and deposit external cash
         if dt in cashflow_schedule:
             deposit_amt = cashflow_schedule[dt]
@@ -183,6 +207,7 @@ def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
                 px = daily_px.get(code, np.nan)
                 if np.isfinite(px) and px > 0:
                     ledger.buy(code, dt, px, alloc, sub_fee_rate=sub_fee)
+
                     
         # Step 2: Periodic Rebalance (if scheduled and after initial day)
         if rebalance_freq and dt in rebal_dates and dt != trading_dates[0]:

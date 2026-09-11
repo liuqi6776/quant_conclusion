@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Independent Audit Script: OTC Fund DCA Strategy vs. Benchmarks
-==============================================================
-Institutional audit script verifying accounting correctness, zero-lookahead, and
-data consistency. Uses relative data paths and standard financial metrics.
+Independent Institutional Audit Script: OTC Fund Strategy vs. Benchmarks
+========================================================================
+Institutional audit script verifying:
+1. Accounting correctness & zero lookahead.
+2. File integrity: SHA-256 hashes in source_manifest.json match disk files byte-for-byte.
+3. Metric reconciliation: Live simulated Scenario B & Scenario A match expected_metrics.json within tolerances.
 
 Usage:
   python scripts/otc_fund/audit_fund_dca_2015_2026.py
@@ -12,6 +14,7 @@ Usage:
 import os
 import sys
 import json
+import hashlib
 import numpy as np
 import pandas as pd
 
@@ -25,22 +28,63 @@ from scripts.otc_fund.metrics import evaluate_portfolio
 
 PROXY_CSV = os.path.join(REPO_ROOT, "data", "otc_fund", "processed", "asset_class_proxy_panel_2015_2026.csv")
 ROOT_CSV = os.path.join(REPO_ROOT, "data", "otc_fund", "fund_dca_daily_panel_2015_2026.csv")
-CONFIG_PATH = os.path.join(REPO_ROOT, "configs", "otc_fund", "expected_metrics.json")
+DIV_CSV = os.path.join(REPO_ROOT, "data", "otc_fund", "dividend_events.csv")
+MANIFEST_PATH = os.path.join(REPO_ROOT, "data", "otc_fund", "source_manifest.json")
+EXPECTED_METRICS_PATH = os.path.join(REPO_ROOT, "configs", "otc_fund", "expected_metrics.json")
+
+def get_file_hash(p: str) -> str:
+    h = hashlib.sha256()
+    with open(p, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 def run_audit():
-    print("Running Institutional Audit on Fund DCA Simulation...")
+    print("=" * 70)
+    print("Running Institutional Audit & Metric Verification")
+    print("=" * 70)
     
-    # Check data file availability with graceful fallback
-    if os.path.exists(PROXY_CSV):
-        df = pd.read_csv(PROXY_CSV, index_col=0, parse_dates=True)
-    elif os.path.exists(ROOT_CSV):
-        df = pd.read_csv(ROOT_CSV, index_col=0, parse_dates=True)
-    else:
-        raise FileNotFoundError(f"Neither {PROXY_CSV} nor {ROOT_CSV} found.")
+    # -------------------------------------------------------------
+    # Check 1: Data Integrity & Manifest Hashes
+    # -------------------------------------------------------------
+    print("1. Verifying source_manifest.json hashes against disk files...")
+    assert os.path.exists(MANIFEST_PATH), f"Manifest missing: {MANIFEST_PATH}"
+    with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
         
-    dates = df.index
-    cfs = build_cashflow_schedule(dates, initial_lump=0.0, dca_amount=10000.0, dca_freq="monthly")
+    for fn, expected_h in manifest["files"].items():
+        if "true" in fn or "asset_class_proxy" in fn:
+            p = os.path.join(REPO_ROOT, "data", "otc_fund", "processed", fn)
+        else:
+            p = os.path.join(REPO_ROOT, "data", "otc_fund", fn)
+        assert os.path.exists(p), f"Panel file missing: {p}"
+        real_h = get_file_hash(p)
+        assert real_h == expected_h, f"Hash mismatch on {fn}: disk={real_h} != manifest={expected_h}"
+        print(f"   [PASS] {fn}: SHA-256 verified ({real_h[:12]}...)")
+
+    # -------------------------------------------------------------
+    # Check 2: Load Expected Metrics Baseline
+    # -------------------------------------------------------------
+    print("\n2. Loading baseline configuration & tolerances from expected_metrics.json...")
+    assert os.path.exists(EXPECTED_METRICS_PATH), f"Expected metrics missing: {EXPECTED_METRICS_PATH}"
+    with open(EXPECTED_METRICS_PATH, "r", encoding="utf-8") as f:
+        exp_data = json.load(f)
+        
+    tolerances = exp_data.get("metrics_tolerances", {
+        "xirr_tolerance": 0.005,
+        "ending_val_rel_tolerance": 0.01,
+        "max_drawdown_tolerance": 0.01
+    })
     
+    # -------------------------------------------------------------
+    # Check 3: Live Simulation Verification (Scenario B: Pure DCA)
+    # -------------------------------------------------------------
+    print("\n3. Executing live chronological simulation for Scenario B (7-Asset, 140w DCA)...")
+    df = pd.read_csv(PROXY_CSV, index_col=0, parse_dates=True)
+    div_df = pd.read_csv(DIV_CSV, parse_dates=["date"]) if os.path.exists(DIV_CSV) else None
+    dates = df.index
+    
+    cfs_b = build_cashflow_schedule(dates, initial_lump=0.0, dca_amount=10000.0, dca_freq="monthly")
     weights_7 = {
         "bond_pure_000015": 0.25,
         "dividend_100032": 0.10,
@@ -51,16 +95,57 @@ def run_audit():
         "proxy_global_tech": 0.10
     }
     
-    _, df_res = run_chronological_simulation(dates, df, cfs, weights_7, sub_fee=0.0015)
-    metrics = evaluate_portfolio(df_res["total_asset"], df_res["cumulative_invested"], cfs)
+    _, df_res_b = run_chronological_simulation(dates, df, cfs_b, weights_7, sub_fee=0.0015, dividend_events=div_df)
+    m_b = evaluate_portfolio(df_res_b["total_asset"], df_res_b["cumulative_invested"], cfs_b, 0.02)
     
-    # Audit checks: verify mathematical invariants
-    assert df_res["total_asset"].iloc[-1] > df_res["cumulative_invested"].iloc[-1], "Total asset must exceed invested capital."
-    assert np.isfinite(metrics["xirr"]), "XIRR must be finite."
-    assert -0.50 < metrics["twr_max_drawdown"] <= 0.0, f"Max drawdown out of bound: {metrics['twr_max_drawdown']}"
-    assert np.isfinite(metrics["sharpe_ratio"]), "Sharpe ratio must be finite."
+    exp_b = exp_data["scenarios"]["pure_monthly_1w_dca"]["modified_7_asset"]
     
-    print(f"AUDIT PASS: Ending={metrics['ending_value']/10000:.2f}w, XIRR={metrics['xirr']*100:.2f}%, TWR MaxDD={metrics['twr_max_drawdown']*100:.2f}%")
+    # Check mathematical invariants
+    assert df_res_b["total_asset"].iloc[-1] > df_res_b["cumulative_invested"].iloc[-1], "Total asset must exceed invested capital."
+    assert np.isfinite(m_b["xirr"]), "XIRR must be finite."
+    assert -0.30 < m_b["twr_max_drawdown"] <= 0.0, f"Max drawdown out of bound: {m_b['twr_max_drawdown']}"
+    
+    # Check metrics match expected within tolerances
+    diff_val_rel = abs(m_b["ending_value"] - exp_b["ending_value"]) / exp_b["ending_value"]
+    diff_xirr = abs(m_b["xirr"] - exp_b["xirr"])
+    diff_dd = abs(m_b["twr_max_drawdown"] - exp_b["twr_max_drawdown"])
+    diff_sharpe = abs(m_b["sharpe_ratio"] - exp_b["sharpe_ratio"])
+    
+    assert diff_val_rel <= tolerances["ending_val_rel_tolerance"], f"Scenario B Ending Value mismatch: sim={m_b['ending_value']:.2f}, exp={exp_b['ending_value']:.2f}, rel_diff={diff_val_rel:.4f}"
+    assert diff_xirr <= tolerances["xirr_tolerance"], f"Scenario B XIRR mismatch: sim={m_b['xirr']:.4f}, exp={exp_b['xirr']:.4f}"
+    assert diff_dd <= tolerances["max_drawdown_tolerance"], f"Scenario B MaxDD mismatch: sim={m_b['twr_max_drawdown']:.4f}, exp={exp_b['twr_max_drawdown']:.4f}"
+    assert diff_sharpe <= 0.05, f"Scenario B Sharpe mismatch: sim={m_b['sharpe_ratio']:.4f}, exp={exp_b['sharpe_ratio']:.4f}"
+    
+    print(f"   [PASS] Scenario B Ending Value: {m_b['ending_value']:,.2f} (expected {exp_b['ending_value']:,.2f}, diff {diff_val_rel*100:.3f}%)")
+    print(f"   [PASS] Scenario B XIRR        : {m_b['xirr']*100:.2f}% (expected {exp_b['xirr']*100:.2f}%)")
+    print(f"   [PASS] Scenario B TWR MaxDD   : {m_b['twr_max_drawdown']*100:.2f}% (expected {exp_b['twr_max_drawdown']*100:.2f}%)")
+    print(f"   [PASS] Scenario B Sharpe Ratio: {m_b['sharpe_ratio']:.4f} (expected {exp_b['sharpe_ratio']:.4f})")
+    
+    # -------------------------------------------------------------
+    # Check 4: Live Simulation Verification (Scenario A: 100w + 1w/m DCA)
+    # -------------------------------------------------------------
+    print("\n4. Executing live chronological simulation for Scenario A (7-Asset, 240w invested)...")
+    cfs_a = build_cashflow_schedule(dates, initial_lump=1000000.0, dca_amount=10000.0, dca_freq="monthly")
+    _, df_res_a = run_chronological_simulation(dates, df, cfs_a, weights_7, sub_fee=0.0015, dividend_events=div_df)
+    m_a = evaluate_portfolio(df_res_a["total_asset"], df_res_a["cumulative_invested"], cfs_a, 0.02)
+    
+    exp_a = exp_data["scenarios"]["lump_100w_plus_monthly_1w"]["modified_7_asset"]
+    
+    diff_val_rel_a = abs(m_a["ending_value"] - exp_a["ending_value"]) / exp_a["ending_value"]
+    diff_xirr_a = abs(m_a["xirr"] - exp_a["xirr"])
+    diff_dd_a = abs(m_a["twr_max_drawdown"] - exp_a["twr_max_drawdown"])
+    
+    assert diff_val_rel_a <= tolerances["ending_val_rel_tolerance"], f"Scenario A Ending Value mismatch: sim={m_a['ending_value']:.2f}, exp={exp_a['ending_value']:.2f}"
+    assert diff_xirr_a <= tolerances["xirr_tolerance"], f"Scenario A XIRR mismatch: sim={m_a['xirr']:.4f}, exp={exp_a['xirr']:.4f}"
+    assert diff_dd_a <= tolerances["max_drawdown_tolerance"], f"Scenario A MaxDD mismatch: sim={m_a['twr_max_drawdown']:.4f}, exp={exp_a['twr_max_drawdown']:.4f}"
+    
+    print(f"   [PASS] Scenario A Ending Value: {m_a['ending_value']:,.2f} (expected {exp_a['ending_value']:,.2f}, diff {diff_val_rel_a*100:.3f}%)")
+    print(f"   [PASS] Scenario A XIRR        : {m_a['xirr']*100:.2f}% (expected {exp_a['xirr']*100:.2f}%)")
+    print(f"   [PASS] Scenario A TWR MaxDD   : {m_a['twr_max_drawdown']*100:.2f}% (expected {exp_a['twr_max_drawdown']*100:.2f}%)")
+    
+    print("\n" + "=" * 70)
+    print("INSTITUTIONAL AUDIT PASSED: ALL INVARIANTS, HASHES, AND METRICS VERIFIED!")
+    print("=" * 70)
     return 0
 
 if __name__ == "__main__":

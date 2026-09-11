@@ -44,3 +44,37 @@ def test_reinvestment_dividend_continuity():
     tot_after = ledger.cash + ledger.get_shares("TEST_FUND") * 1.80
     assert pytest.approx(tot_after, rel=1e-5) == 10000.0
     assert ledger.cash == 0.0
+
+def test_simulation_with_real_dividends():
+    """Verify that chronological simulation actually processes real fund dividends."""
+    from scripts.otc_fund.ledger import run_chronological_simulation
+    from scripts.otc_fund.cashflows import build_cashflow_schedule
+    
+    div_csv = os.path.join(REPO_ROOT, "data", "otc_fund", "dividend_events.csv")
+    proxy_csv = os.path.join(REPO_ROOT, "data", "otc_fund", "processed", "asset_class_proxy_panel_2015_2026.csv")
+    assert os.path.exists(div_csv), "dividend_events.csv must exist"
+    assert os.path.exists(proxy_csv), "proxy panel must exist"
+    
+    df_proxy = pd.read_csv(proxy_csv, index_col=0, parse_dates=True)
+    div_df = pd.read_csv(div_csv, parse_dates=["date"])
+    
+    # Check 100032 dividends exist
+    div_100032 = div_df[div_df["target_column"] == "dividend_100032"]
+    assert len(div_100032) >= 10, "100032 must have at least 10 dividend events"
+    
+    # Run a test window around the 2016-02-02 dividend (0.35 RMB per share)
+    dates = df_proxy.index[(df_proxy.index >= "2016-01-04") & (df_proxy.index <= "2016-02-15")]
+    cfs = {dates[0]: 100000.0}
+    weights = {"dividend_100032": 1.0}
+    
+    ledger_no_div, res_no_div = run_chronological_simulation(dates, df_proxy, cfs, weights, sub_fee=0.0, dividend_events=pd.DataFrame())
+    ledger_with_div, res_with_div = run_chronological_simulation(dates, df_proxy, cfs, weights, sub_fee=0.0, dividend_events=div_df)
+    
+    # After 2016-02-02, shares with dividend reinvestment MUST exceed shares without
+    shares_no_div = ledger_no_div.get_shares("dividend_100032")
+    shares_with_div = ledger_with_div.get_shares("dividend_100032")
+    assert shares_with_div > shares_no_div, f"Shares must increase after reinvestment: with={shares_with_div}, without={shares_no_div}"
+    
+    # Final asset value with dividend reinvestment MUST be strictly higher than without
+    assert res_with_div["total_asset"].iloc[-1] > res_no_div["total_asset"].iloc[-1]
+

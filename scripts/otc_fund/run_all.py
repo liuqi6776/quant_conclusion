@@ -3,7 +3,7 @@
 Master Execution & Audit Pipeline for OTC Fund Strategies
 =========================================================
 Runs all portfolio configurations, evaluates standard metrics, performs leave-one-out
-attribution and rolling analyses, and exports expected_metrics.json.
+attribution and sensitivity analyses, and exports expected_metrics.json.
 
 Usage:
   python scripts/otc_fund/run_all.py
@@ -21,12 +21,13 @@ REPO_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 sys.path.insert(0, REPO_ROOT)
 
 from scripts.otc_fund.instruments import CORE_FUNDS, RESEARCH_PROXIES, BENCHMARKS
-from scripts.otc_fund.cashflows import build_cashflow_schedule, generate_monthly_dca_dates
+from scripts.otc_fund.cashflows import build_cashflow_schedule
 from scripts.otc_fund.ledger import run_chronological_simulation
 from scripts.otc_fund.metrics import evaluate_portfolio, calc_max_drawdown
 
 DATA_PROXY_CSV = os.path.join(REPO_ROOT, "data", "otc_fund", "processed", "asset_class_proxy_panel_2015_2026.csv")
 DATA_TRUE_CSV = os.path.join(REPO_ROOT, "data", "otc_fund", "processed", "fund_true_nav_panel_2015_2026.csv")
+DIVIDEND_CSV = os.path.join(REPO_ROOT, "data", "otc_fund", "dividend_events.csv")
 CONFIG_PATH = os.path.join(REPO_ROOT, "configs", "otc_fund", "fund_dca.yaml")
 EXPECTED_METRICS_PATH = os.path.join(REPO_ROOT, "configs", "otc_fund", "expected_metrics.json")
 
@@ -35,7 +36,8 @@ def load_data():
         raise FileNotFoundError(f"Proxy dataset not found at {DATA_PROXY_CSV}. Run build_fund_panel.py first.")
     df_proxy = pd.read_csv(DATA_PROXY_CSV, index_col=0, parse_dates=True)
     df_true = pd.read_csv(DATA_TRUE_CSV, index_col=0, parse_dates=True) if os.path.exists(DATA_TRUE_CSV) else None
-    return df_proxy, df_true
+    div_df = pd.read_csv(DIVIDEND_CSV, parse_dates=["date"]) if os.path.exists(DIVIDEND_CSV) else None
+    return df_proxy, df_true, div_df
 
 def run_pipeline():
     print("=" * 70)
@@ -45,7 +47,7 @@ def run_pipeline():
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
         
-    df_proxy, df_true = load_data()
+    df_proxy, df_true, div_df = load_data()
     dates = df_proxy.index
     sub_fee = config["fee_model"]["subscription_fee_rate"]
     rf_annual = config["risk_free_rate_annual"]
@@ -53,46 +55,60 @@ def run_pipeline():
     weights_9 = config["portfolios"]["canonical_9_asset"]["weights"]
     weights_7 = config["portfolios"]["modified_7_asset"]["weights"]
     
-    results = {}
+    # Pure Passive Index Portfolio Benchmark (CSI 300 + Pure Bond + Gold + Nasdaq 100 + Money Market)
+    weights_passive = {
+        "csi300_fund_050002": 0.20,
+        "bond_pure_000015": 0.30,
+        "gold_000216": 0.20,
+        "nasdaq_000834": 0.20,
+        "money_market_000198": 0.10
+    }
     
     # -------------------------------------------------------------
-    # Track 1: Scenario A - 100w Lump Sum + 1w/month DCA (2015-2026)
+    # Track 1: Scenario A - 100w Lump Sum + 1w/month DCA (240.0w invested)
     # -------------------------------------------------------------
-    print("\n--> Running Scenario A: 100w Lump Sum + 1w/m DCA (239w invested)...")
+    print("\n--> Running Scenario A: 100w Lump Sum + 1w/m DCA (240.0w invested)...")
     cfs_lump = build_cashflow_schedule(dates, initial_lump=1000000.0, dca_amount=10000.0, dca_freq="monthly")
     
     # 9-asset
-    _, df_res_9_lump = run_chronological_simulation(dates, df_proxy, cfs_lump, weights_9, sub_fee=sub_fee)
+    _, df_res_9_lump = run_chronological_simulation(dates, df_proxy, cfs_lump, weights_9, sub_fee=sub_fee, dividend_events=div_df)
     m_9_lump = evaluate_portfolio(df_res_9_lump["total_asset"], df_res_9_lump["cumulative_invested"], cfs_lump, rf_annual)
     
     # 7-asset
-    _, df_res_7_lump = run_chronological_simulation(dates, df_proxy, cfs_lump, weights_7, sub_fee=sub_fee)
+    _, df_res_7_lump = run_chronological_simulation(dates, df_proxy, cfs_lump, weights_7, sub_fee=sub_fee, dividend_events=div_df)
     m_7_lump = evaluate_portfolio(df_res_7_lump["total_asset"], df_res_7_lump["cumulative_invested"], cfs_lump, rf_annual)
     
-    # Benchmark: SSE Composite (theoretical index)
-    _, df_res_sh_lump = run_chronological_simulation(dates, df_proxy, cfs_lump, {"sh_index_000001": 1.0}, sub_fee=sub_fee)
+    # Pure passive broad index benchmark
+    _, df_res_pass_lump = run_chronological_simulation(dates, df_proxy, cfs_lump, weights_passive, sub_fee=sub_fee, dividend_events=div_df)
+    m_pass_lump = evaluate_portfolio(df_res_pass_lump["total_asset"], df_res_pass_lump["cumulative_invested"], cfs_lump, rf_annual)
+    
+    # Benchmark: SSE Composite (theoretical price index: 0 fee)
+    _, df_res_sh_lump = run_chronological_simulation(dates, df_proxy, cfs_lump, {"sh_index_000001": 1.0}, sub_fee=0.0, dividend_events=div_df)
     m_sh_lump = evaluate_portfolio(df_res_sh_lump["total_asset"], df_res_sh_lump["cumulative_invested"], cfs_lump, rf_annual)
     
     # Benchmark: CSI 300 Investable Fund (050002)
-    _, df_res_300_lump = run_chronological_simulation(dates, df_proxy, cfs_lump, {"csi300_price_index": 1.0}, sub_fee=sub_fee)
+    _, df_res_300_lump = run_chronological_simulation(dates, df_proxy, cfs_lump, {"csi300_fund_050002": 1.0}, sub_fee=sub_fee, dividend_events=div_df)
     m_300_lump = evaluate_portfolio(df_res_300_lump["total_asset"], df_res_300_lump["cumulative_invested"], cfs_lump, rf_annual)
     
     # -------------------------------------------------------------
-    # Track 2: Scenario B - Pure Monthly DCA 1w/month (140w invested)
+    # Track 2: Scenario B - Pure Monthly DCA 1w/month (140.0w invested)
     # -------------------------------------------------------------
-    print("--> Running Scenario B: Pure Monthly DCA (140w invested)...")
+    print("--> Running Scenario B: Pure Monthly DCA (140.0w invested)...")
     cfs_dca = build_cashflow_schedule(dates, initial_lump=0.0, dca_amount=10000.0, dca_freq="monthly")
     
-    _, df_res_9_dca = run_chronological_simulation(dates, df_proxy, cfs_dca, weights_9, sub_fee=sub_fee)
+    _, df_res_9_dca = run_chronological_simulation(dates, df_proxy, cfs_dca, weights_9, sub_fee=sub_fee, dividend_events=div_df)
     m_9_dca = evaluate_portfolio(df_res_9_dca["total_asset"], df_res_9_dca["cumulative_invested"], cfs_dca, rf_annual)
     
-    _, df_res_7_dca = run_chronological_simulation(dates, df_proxy, cfs_dca, weights_7, sub_fee=sub_fee)
+    _, df_res_7_dca = run_chronological_simulation(dates, df_proxy, cfs_dca, weights_7, sub_fee=sub_fee, dividend_events=div_df)
     m_7_dca = evaluate_portfolio(df_res_7_dca["total_asset"], df_res_7_dca["cumulative_invested"], cfs_dca, rf_annual)
     
-    _, df_res_sh_dca = run_chronological_simulation(dates, df_proxy, cfs_dca, {"sh_index_000001": 1.0}, sub_fee=sub_fee)
+    _, df_res_pass_dca = run_chronological_simulation(dates, df_proxy, cfs_dca, weights_passive, sub_fee=sub_fee, dividend_events=div_df)
+    m_pass_dca = evaluate_portfolio(df_res_pass_dca["total_asset"], df_res_pass_dca["cumulative_invested"], cfs_dca, rf_annual)
+    
+    _, df_res_sh_dca = run_chronological_simulation(dates, df_proxy, cfs_dca, {"sh_index_000001": 1.0}, sub_fee=0.0, dividend_events=div_df)
     m_sh_dca = evaluate_portfolio(df_res_sh_dca["total_asset"], df_res_sh_dca["cumulative_invested"], cfs_dca, rf_annual)
     
-    _, df_res_300_dca = run_chronological_simulation(dates, df_proxy, cfs_dca, {"csi300_price_index": 1.0}, sub_fee=sub_fee)
+    _, df_res_300_dca = run_chronological_simulation(dates, df_proxy, cfs_dca, {"csi300_fund_050002": 1.0}, sub_fee=sub_fee, dividend_events=div_df)
     m_300_dca = evaluate_portfolio(df_res_300_dca["total_asset"], df_res_300_dca["cumulative_invested"], cfs_dca, rf_annual)
     
     # -------------------------------------------------------------
@@ -100,7 +116,7 @@ def run_pipeline():
     # -------------------------------------------------------------
     print("--> Running Scenario C: Weekly 3,150 RMB DCA Sensitivity Track...")
     cfs_weekly = build_cashflow_schedule(dates, initial_lump=0.0, dca_amount=3150.0, dca_freq="weekly")
-    _, df_res_7_weekly = run_chronological_simulation(dates, df_proxy, cfs_weekly, weights_7, sub_fee=sub_fee)
+    _, df_res_7_weekly = run_chronological_simulation(dates, df_proxy, cfs_weekly, weights_7, sub_fee=sub_fee, dividend_events=div_df)
     m_7_weekly = evaluate_portfolio(df_res_7_weekly["total_asset"], df_res_7_weekly["cumulative_invested"], cfs_weekly, rf_annual)
 
     # -------------------------------------------------------------
@@ -121,8 +137,96 @@ def run_pipeline():
         "global_tech_017730": 0.10,
         "oil_501018": 0.05
     }
-    _, df_res_common_9 = run_chronological_simulation(dates_common, df_true, cfs_common, true_weights_9, sub_fee=sub_fee)
+    _, df_res_common_9 = run_chronological_simulation(dates_common, df_true, cfs_common, true_weights_9, sub_fee=sub_fee, dividend_events=div_df)
     m_common_9 = evaluate_portfolio(df_res_common_9["total_asset"], df_res_common_9["cumulative_invested"], cfs_common, rf_annual)
+
+    # -------------------------------------------------------------
+    # Track 5: Start-Date Sensitivity (2015, 2016, 2018, 2021)
+    # -------------------------------------------------------------
+    print("--> Running Start-Date Sensitivity Analysis...")
+    start_date_results = {}
+    for label, start_s in [
+        ("2015_bubble_peak_crash", "2015-01-05"),
+        ("2016_circuit_breaker_bottom", "2016-01-04"),
+        ("2018_trade_war_peak", "2018-01-02"),
+        ("2021_pre_tightening_peak", "2021-01-04")
+    ]:
+        sub_d = dates[dates >= pd.Timestamp(start_s)]
+        cfs_sub = build_cashflow_schedule(sub_d, initial_lump=0.0, dca_amount=10000.0, dca_freq="monthly")
+        _, df_s7 = run_chronological_simulation(sub_d, df_proxy, cfs_sub, weights_7, sub_fee=sub_fee, dividend_events=div_df)
+        m_s7 = evaluate_portfolio(df_s7["total_asset"], df_s7["cumulative_invested"], cfs_sub, rf_annual)
+        
+        _, df_spass = run_chronological_simulation(sub_d, df_proxy, cfs_sub, weights_passive, sub_fee=sub_fee, dividend_events=div_df)
+        m_spass = evaluate_portfolio(df_spass["total_asset"], df_spass["cumulative_invested"], cfs_sub, rf_annual)
+        
+        _, df_ssh = run_chronological_simulation(sub_d, df_proxy, cfs_sub, {"sh_index_000001": 1.0}, sub_fee=0.0, dividend_events=div_df)
+        m_ssh = evaluate_portfolio(df_ssh["total_asset"], df_ssh["cumulative_invested"], cfs_sub, rf_annual)
+        
+        start_date_results[label] = {
+            "start_date": start_s,
+            "invested_total": m_s7["total_invested"],
+            "modified_7_asset": {
+                "ending_value": round(m_s7["ending_value"], 2),
+                "xirr": round(m_s7["xirr"], 4),
+                "twr_max_drawdown": round(m_s7["twr_max_drawdown"], 4)
+            },
+            "passive_broad_index": {
+                "ending_value": round(m_spass["ending_value"], 2),
+                "xirr": round(m_spass["xirr"], 4),
+                "twr_max_drawdown": round(m_spass["twr_max_drawdown"], 4)
+            },
+            "shanghai_index": {
+                "ending_value": round(m_ssh["ending_value"], 2),
+                "xirr": round(m_ssh["xirr"], 4),
+                "twr_max_drawdown": round(m_ssh["twr_max_drawdown"], 4)
+            }
+        }
+
+    # -------------------------------------------------------------
+    # Track 6: In-Sample (2015-2020) vs Out-of-Sample (2021-2026) Split
+    # -------------------------------------------------------------
+    print("--> Running In-Sample vs Out-of-Sample Split Analysis...")
+    d_is = dates[(dates >= "2015-01-05") & (dates <= "2020-12-31")]
+    d_oos = dates[(dates >= "2021-01-04") & (dates <= "2026-08-06")]
+    
+    cfs_is = build_cashflow_schedule(d_is, initial_lump=0.0, dca_amount=10000.0, dca_freq="monthly")
+    _, df_is_7 = run_chronological_simulation(d_is, df_proxy, cfs_is, weights_7, sub_fee=sub_fee, dividend_events=div_df)
+    m_is_7 = evaluate_portfolio(df_is_7["total_asset"], df_is_7["cumulative_invested"], cfs_is, rf_annual)
+    
+    _, df_is_pass = run_chronological_simulation(d_is, df_proxy, cfs_is, weights_passive, sub_fee=sub_fee, dividend_events=div_df)
+    m_is_pass = evaluate_portfolio(df_is_pass["total_asset"], df_is_pass["cumulative_invested"], cfs_is, rf_annual)
+    
+    _, df_is_sh = run_chronological_simulation(d_is, df_proxy, cfs_is, {"sh_index_000001": 1.0}, sub_fee=0.0, dividend_events=div_df)
+    m_is_sh = evaluate_portfolio(df_is_sh["total_asset"], df_is_sh["cumulative_invested"], cfs_is, rf_annual)
+    
+    cfs_oos = build_cashflow_schedule(d_oos, initial_lump=0.0, dca_amount=10000.0, dca_freq="monthly")
+    _, df_oos_7 = run_chronological_simulation(d_oos, df_proxy, cfs_oos, weights_7, sub_fee=sub_fee, dividend_events=div_df)
+    m_oos_7 = evaluate_portfolio(df_oos_7["total_asset"], df_oos_7["cumulative_invested"], cfs_oos, rf_annual)
+    
+    _, df_oos_pass = run_chronological_simulation(d_oos, df_proxy, cfs_oos, weights_passive, sub_fee=sub_fee, dividend_events=div_df)
+    m_oos_pass = evaluate_portfolio(df_oos_pass["total_asset"], df_oos_pass["cumulative_invested"], cfs_oos, rf_annual)
+    
+    _, df_oos_sh = run_chronological_simulation(d_oos, df_proxy, cfs_oos, {"sh_index_000001": 1.0}, sub_fee=0.0, dividend_events=div_df)
+    m_oos_sh = evaluate_portfolio(df_oos_sh["total_asset"], df_oos_sh["cumulative_invested"], cfs_oos, rf_annual)
+    
+    split_results = {
+        "in_sample_2015_2020": {
+            "window": "2015-01-05 to 2020-12-31",
+            "months": len(cfs_is),
+            "invested_total": m_is_7["total_invested"],
+            "modified_7_asset": {"ending_value": round(m_is_7["ending_value"], 2), "xirr": round(m_is_7["xirr"], 4), "twr_max_drawdown": round(m_is_7["twr_max_drawdown"], 4)},
+            "passive_broad_index": {"ending_value": round(m_is_pass["ending_value"], 2), "xirr": round(m_is_pass["xirr"], 4), "twr_max_drawdown": round(m_is_pass["twr_max_drawdown"], 4)},
+            "shanghai_index": {"ending_value": round(m_is_sh["ending_value"], 2), "xirr": round(m_is_sh["xirr"], 4), "twr_max_drawdown": round(m_is_sh["twr_max_drawdown"], 4)}
+        },
+        "out_of_sample_2021_2026": {
+            "window": "2021-01-04 to 2026-08-06",
+            "months": len(cfs_oos),
+            "invested_total": m_oos_7["total_invested"],
+            "modified_7_asset": {"ending_value": round(m_oos_7["ending_value"], 2), "xirr": round(m_oos_7["xirr"], 4), "twr_max_drawdown": round(m_oos_7["twr_max_drawdown"], 4)},
+            "passive_broad_index": {"ending_value": round(m_oos_pass["ending_value"], 2), "xirr": round(m_oos_pass["xirr"], 4), "twr_max_drawdown": round(m_oos_pass["twr_max_drawdown"], 4)},
+            "shanghai_index": {"ending_value": round(m_oos_sh["ending_value"], 2), "xirr": round(m_oos_sh["xirr"], 4), "twr_max_drawdown": round(m_oos_sh["twr_max_drawdown"], 4)}
+        }
+    }
 
     # -------------------------------------------------------------
     # Robustness: Leave-One-Out Asset Attribution (Scenario B Pure DCA)
@@ -133,7 +237,7 @@ def run_pipeline():
         sub_weights = {k: v for k, v in weights_9.items() if k != dropped_asset}
         tot_w = sum(sub_weights.values())
         norm_weights = {k: v / tot_w for k, v in sub_weights.items()}
-        _, df_loo = run_chronological_simulation(dates, df_proxy, cfs_dca, norm_weights, sub_fee=sub_fee)
+        _, df_loo = run_chronological_simulation(dates, df_proxy, cfs_dca, norm_weights, sub_fee=sub_fee, dividend_events=div_df)
         m_loo = evaluate_portfolio(df_loo["total_asset"], df_loo["cumulative_invested"], cfs_dca, rf_annual)
         loo_results[dropped_asset] = {
             "ending_value": round(m_loo["ending_value"], 2),
@@ -143,9 +247,9 @@ def run_pipeline():
 
     # Format JSON payload
     clean_metrics = {
-        "version": "2.0.0",
+        "version": "2.1.0",
         "generated_at": pd.Timestamp.now().isoformat(),
-        "notes": "Machine-readable verified baseline metrics generated by run_all.py",
+        "notes": "Verified baseline metrics generated by run_all.py with explicit dividend reinvestment and passive benchmark control",
         "scenarios": {
             "lump_100w_plus_monthly_1w": {
                 "invested_total": m_9_lump["total_invested"],
@@ -171,19 +275,29 @@ def run_pipeline():
                     "custom_capital_ratio_drawdown": round(m_7_lump["custom_capital_ratio_drawdown"], 4),
                     "sharpe_ratio": round(m_7_lump["sharpe_ratio"], 4)
                 },
+                "passive_broad_index": {
+                    "ending_value": round(m_pass_lump["ending_value"], 2),
+                    "net_profit": round(m_pass_lump["net_profit"], 2),
+                    "roi": round(m_pass_lump["roi"], 4),
+                    "xirr": round(m_pass_lump["xirr"], 4),
+                    "twr_max_drawdown": round(m_pass_lump["twr_max_drawdown"], 4),
+                    "sharpe_ratio": round(m_pass_lump["sharpe_ratio"], 4)
+                },
                 "shanghai_index": {
                     "ending_value": round(m_sh_lump["ending_value"], 2),
                     "net_profit": round(m_sh_lump["net_profit"], 2),
                     "roi": round(m_sh_lump["roi"], 4),
                     "xirr": round(m_sh_lump["xirr"], 4),
-                    "twr_max_drawdown": round(m_sh_lump["twr_max_drawdown"], 4)
+                    "twr_max_drawdown": round(m_sh_lump["twr_max_drawdown"], 4),
+                    "sharpe_ratio": round(m_sh_lump["sharpe_ratio"], 4)
                 },
                 "csi300_fund": {
                     "ending_value": round(m_300_lump["ending_value"], 2),
                     "net_profit": round(m_300_lump["net_profit"], 2),
                     "roi": round(m_300_lump["roi"], 4),
                     "xirr": round(m_300_lump["xirr"], 4),
-                    "twr_max_drawdown": round(m_300_lump["twr_max_drawdown"], 4)
+                    "twr_max_drawdown": round(m_300_lump["twr_max_drawdown"], 4),
+                    "sharpe_ratio": round(m_300_lump["sharpe_ratio"], 4)
                 }
             },
             "pure_monthly_1w_dca": {
@@ -210,11 +324,29 @@ def run_pipeline():
                     "custom_capital_ratio_drawdown": round(m_7_dca["custom_capital_ratio_drawdown"], 4),
                     "sharpe_ratio": round(m_7_dca["sharpe_ratio"], 4)
                 },
+                "passive_broad_index": {
+                    "ending_value": round(m_pass_dca["ending_value"], 2),
+                    "net_profit": round(m_pass_dca["net_profit"], 2),
+                    "roi": round(m_pass_dca["roi"], 4),
+                    "xirr": round(m_pass_dca["xirr"], 4),
+                    "twr_max_drawdown": round(m_pass_dca["twr_max_drawdown"], 4),
+                    "sharpe_ratio": round(m_pass_dca["sharpe_ratio"], 4)
+                },
                 "shanghai_index": {
                     "ending_value": round(m_sh_dca["ending_value"], 2),
+                    "net_profit": round(m_sh_dca["net_profit"], 2),
                     "roi": round(m_sh_dca["roi"], 4),
                     "xirr": round(m_sh_dca["xirr"], 4),
-                    "twr_max_drawdown": round(m_sh_dca["twr_max_drawdown"], 4)
+                    "twr_max_drawdown": round(m_sh_dca["twr_max_drawdown"], 4),
+                    "sharpe_ratio": round(m_sh_dca["sharpe_ratio"], 4)
+                },
+                "csi300_fund": {
+                    "ending_value": round(m_300_dca["ending_value"], 2),
+                    "net_profit": round(m_300_dca["net_profit"], 2),
+                    "roi": round(m_300_dca["roi"], 4),
+                    "xirr": round(m_300_dca["xirr"], 4),
+                    "twr_max_drawdown": round(m_300_dca["twr_max_drawdown"], 4),
+                    "sharpe_ratio": round(m_300_dca["sharpe_ratio"], 4)
                 }
             },
             "weekly_3150_dca": {
@@ -232,6 +364,8 @@ def run_pipeline():
                 "twr_max_drawdown": round(m_common_9["twr_max_drawdown"], 4),
                 "sharpe_ratio": round(m_common_9["sharpe_ratio"], 4)
             },
+            "start_date_sensitivity": start_date_results,
+            "sample_split": split_results,
             "leave_one_out_sensitivity": loo_results
         },
         "metrics_tolerances": {
@@ -246,15 +380,17 @@ def run_pipeline():
     print(f"\n[OK] Exported expected metrics to {EXPECTED_METRICS_PATH}")
     
     print("\n" + "=" * 70)
-    print("KEY REVENUE & RISK AUDIT RESULTS SUMMARY")
+    print("KEY REVENUE & RISK AUDIT RESULTS SUMMARY (DIVIDEND-REINVESTED)")
     print("=" * 70)
-    print(f"1. Scenario A (100w + 1w/m DCA, Total 239w invested):")
+    print(f"1. Scenario A (100w + 1w/m DCA, Total {m_7_lump['total_invested']/10000:.1f}w invested):")
     print(f"   - Canonical 9-Asset: Ending {m_9_lump['ending_value']/10000:.2f}w, XIRR {m_9_lump['xirr']*100:.2f}%, TWR MaxDD {m_9_lump['twr_max_drawdown']*100:.2f}%, Sharpe {m_9_lump['sharpe_ratio']:.2f}")
     print(f"   - Modified 7-Asset : Ending {m_7_lump['ending_value']/10000:.2f}w, XIRR {m_7_lump['xirr']*100:.2f}%, TWR MaxDD {m_7_lump['twr_max_drawdown']*100:.2f}%, Sharpe {m_7_lump['sharpe_ratio']:.2f}")
+    print(f"   - Passive Broad Idx: Ending {m_pass_lump['ending_value']/10000:.2f}w, XIRR {m_pass_lump['xirr']*100:.2f}%, TWR MaxDD {m_pass_lump['twr_max_drawdown']*100:.2f}%, Sharpe {m_pass_lump['sharpe_ratio']:.2f}")
     print(f"   - SSE Composite    : Ending {m_sh_lump['ending_value']/10000:.2f}w, XIRR {m_sh_lump['xirr']*100:.2f}%, TWR MaxDD {m_sh_lump['twr_max_drawdown']*100:.2f}%")
-    print(f"2. Scenario B (Pure Monthly 1w DCA, Total 140w invested):")
+    print(f"2. Scenario B (Pure Monthly 1w DCA, Total {m_7_dca['total_invested']/10000:.1f}w invested):")
     print(f"   - Canonical 9-Asset: Ending {m_9_dca['ending_value']/10000:.2f}w, XIRR {m_9_dca['xirr']*100:.2f}%, Custom Profit DD {m_9_dca['custom_capital_ratio_drawdown']*100:.2f}%")
     print(f"   - Modified 7-Asset : Ending {m_7_dca['ending_value']/10000:.2f}w, XIRR {m_7_dca['xirr']*100:.2f}%, Custom Profit DD {m_7_dca['custom_capital_ratio_drawdown']*100:.2f}%")
+    print(f"   - Passive Broad Idx: Ending {m_pass_dca['ending_value']/10000:.2f}w, XIRR {m_pass_dca['xirr']*100:.2f}%, Custom Profit DD {m_pass_dca['custom_capital_ratio_drawdown']*100:.2f}%")
     print(f"   - SSE Composite    : Ending {m_sh_dca['ending_value']/10000:.2f}w, XIRR {m_sh_dca['xirr']*100:.2f}%, Custom Profit DD {m_sh_dca['custom_capital_ratio_drawdown']*100:.2f}%")
     print(f"3. Real Fund Common Window (2023-2026, all 9 funds exist in reality):")
     print(f"   - True 9-Asset     : Ending {m_common_9['ending_value']/10000:.2f}w, XIRR {m_common_9['xirr']*100:.2f}%, Sharpe {m_common_9['sharpe_ratio']:.2f}")
