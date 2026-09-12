@@ -318,3 +318,32 @@ def get_instrument(code: str) -> InstrumentMeta:
     if code in BENCHMARKS:
         return BENCHMARKS[code]
     raise KeyError(f"Instrument with code {code} not registered in metadata registry.")
+
+def resolve_sub_fee(code_or_column: str, default_fee: float = 0.0015) -> float:
+    """
+    Dynamically resolve statutory subscription fee for an asset column or fund code.
+    - 000198 (Money Market): 0.0% statutory subscription fee
+    - sh_index_000001 (Theoretical Price Index): 0.0%
+    - Registered funds: look up metadata sub_fee
+    - Fallback: default_fee (0.0015)
+    """
+    import re
+    if "000198" in code_or_column:
+        return 0.0
+    if "sh_index" in code_or_column:
+        return 0.0
+        
+    try:
+        return get_instrument(code_or_column).sub_fee
+    except KeyError:
+        pass
+        
+    m = re.search(r"(\d{6})", code_or_column)
+    if m:
+        c = m.group(1)
+        try:
+            return get_instrument(c).sub_fee
+        except KeyError:
+            pass
+            
+    return default_fee

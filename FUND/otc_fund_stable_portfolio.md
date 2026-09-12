@@ -3,7 +3,7 @@
 
 > **状态**: ⚠️ 候选
 > **多维标签**: research_status=exploratory · oos_scope=component_only · reproducibility=full · data_availability=private · code_review=passed · execution_validation=passed
-> **核心脚本**: [`scripts/otc_fund/run_all.py`](../scripts/otc_fund/run_all.py) · [`vol_target.py`](../scripts/otc_fund/vol_target.py) · [`option_tail_hedge.py`](../scripts/otc_fund/option_tail_hedge.py)
+> **核心脚本**: [`scripts/otc_fund/run_all.py`](../scripts/otc_fund/run_all.py) · [`vol_target.py`](../scripts/otc_fund/vol_target.py)
 > **基准指标**: [`configs/otc_fund/expected_metrics.json`](../configs/otc_fund/expected_metrics.json)
 > **分红数据**: [`data/otc_fund/dividend_events.csv`](../data/otc_fund/dividend_events.csv)
 
@@ -151,11 +151,27 @@
 - **执行方式**：卖出超配资产的超额部分，并买入低配资产，将其拉回目标权重；
 - **费用保护**：严格遵守 **FIFO 持有期阶梯赎回费规则**。由于组合持有时长通常超过 730 天（2 年），老份额赎回费率为 0.0%，优先消耗零费份额；严禁对持有不足 7 天（惩戒性费率 1.5%）的新批次进行再平衡。
 
-### 三级：目标波动率风控再平衡（VolTarget 7.0% Trigger，月度/动态）
+#### 三级：目标波动率风控再平衡（VolTarget 7.0% Trigger，月度/动态）
 - **信号计算**：每月末基于过去 60 交易日的组合日收益率序列，计算年化波动率 $\sigma_{60}$，**严格滞后 1 日取值**；
 - **动态降仓乘数**：
   $$\text{Multiplier}_t = \text{clip}\left(\frac{7.0\%}{\sigma_{60}}, 0.30, 1.00\right)$$
 - **结息闭环**：当市场剧烈波动导致 Multiplier < 1.0 时，等比压缩 6 类风险资产权重，释放出的未分配现金 $1.0 - \text{Multiplier}_t$ **全额划入货币基金（000198 天弘余额宝）**，计提年化 2.0% 无风险票息，杜绝闲置资金零收益拖累。
+
+---
+
+## 6. 滚动持有期收益率分布检验 (Rolling Horizon Matrix)
+
+为彻底检验策略在任意入场时点的稳健性与持有期规律，我们在 2015–2026 全周期内对“7 资产改良版”每月定投进行了 **3 年 (36m)、5 年 (60m)、8 年 (96m)** 滚动持有期全覆盖实证回测：
+
+| 滚动定投期限 / Horizon | 独立滚动窗口数 | 中位数 XIRR | P10 谨慎收益率 | P90 乐观收益率 | 最差 XIRR | 最佳 XIRR | 正收益概率 | 最差 TWR 回撤 | 中位数夏普比率 |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **3 年滚动定投 (36 个月)** | 104 个 | **10.27%** | 5.06% | 18.61% | +1.85% | +24.61% | **100.0%** | -10.31% | 0.99 |
+| **5 年滚动定投 (60 个月)** | 80 个 | **10.67%** | 8.03% | 15.77% | +6.25% | +18.97% | **100.0%** | -10.73% | 1.10 |
+| **8 年滚动定投 (96 个月)** | 44 个 | **10.92%** | 8.86% | 15.19% | +8.08% | +16.06% | **100.0%** | -11.16% | 1.03 |
+
+- **【实证核心启示】**：
+  1. **零亏损确定性**：在所有 228 个历史滚动窗口中，**正收益胜率均为 100.0%**，即使在最差的 3 年入场窗口，年化 XIRR 依然达到 +1.85%；
+  2. **收益收敛与防守韧性**：随着持有期从 3 年拉长至 8 年，P10-P90 收益带宽从 13.55% 显著收窄至 6.33%，中位数年化收益稳定在 **10.3% ~ 10.9%**，全历史最差回撤被死死压制在 **-11.2% 以内**。
 
 ---
 
@@ -164,12 +180,9 @@
 为了从根本上消除“仅比对期末指标数值，可能因算法内部逻辑漂移但最终指标巧合接近而漏检”的系统性风险，审计框架在代码层引入了中间账本流水的 SHA-256 逐行哈希锁定：
 
 1. **中间产物逐日矩阵**：
-   - 账本输出包含每个交易日的 `cash`、`cumulative_invested`、`market_value`、`total_asset` 以及 7 类资产各自的持仓份额 `shares_xxx`（共 11 列时间序列，长达 2,826 行）；
+   - 账本输出包含每个交易日的 `cash`、`cumulative_invested`、`market_value`、`total_asset` 以及 7 类资产各自的持仓份额 `shares_xxx`（共 11 列时间序列，长达 2,825 行）；
 2. **规范化哈希锁定**：
-   - 将日度账本格式化为保留 4 位小数、统一 `\n` 换行符的 CSV 字节流，并计算 SHA-256 摘要值：
-     - **场景 B (纯定投 140w)** `ledger_hash`: `bad1bbbd62e2b0b4eee0ae5297e8eac6837be6d401fbdc295de97c4eb496b058`
-     - **场景 A (100w底仓+定投 240w)** `ledger_hash`: `3631e50eb97b4624f9c9ff14c7b7a709f75c730304c6fb301db763faa931818b`
+   - 将日度账本格式化为保留 4 位小数、统一 `\n` 换行符的 CSV 字节流，并计算 SHA-256 摘要值，锁定于 `expected_metrics.json`；
 3. **审计脚本与回归测试双重断言**：
    - [`scripts/otc_fund/audit_fund_dca_2015_2026.py`](../scripts/otc_fund/audit_fund_dca_2015_2026.py) 与 [`tests/otc_fund/test_ledger_chronology.py`](../tests/otc_fund/test_ledger_chronology.py) 每次运行时实时重跑全周期交易模拟并比对哈希；
    - 只要任何一笔现金流时序、分红除息份额、或申购费扣除出现 1 分钱的偏差，哈希将立即失配报警并中断流程。
-

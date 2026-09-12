@@ -14,7 +14,7 @@ from typing import Dict, List, Tuple, Optional, Any
 import pandas as pd
 import numpy as np
 
-from .instruments import get_instrument, InstrumentMeta
+from .instruments import get_instrument, InstrumentMeta, resolve_sub_fee
 from .fees import calc_sub_fee, calc_fifo_redemption
 
 class Lot:
@@ -116,11 +116,19 @@ class ForwardLedger:
     def record_day(self, date: pd.Timestamp, daily_unit_navs: Dict[str, float]):
         """
         Calculate closing market value and record state for date.
+        Guarantees all known/historical asset share series stay strictly aligned in length and deterministic.
         """
         mv = 0.0
-        for code, lots in self.lots.items():
-            sh = sum(lot.shares for lot in lots)
-            self.history_shares.setdefault(code, []).append(sh)
+        all_codes = sorted(set(self.lots.keys()) | set(self.history_shares.keys()))
+        current_day_count = len(self.history_dates)
+        
+        for code in all_codes:
+            if code not in self.history_shares:
+                # Backfill 0.0 for all days prior to this asset's appearance
+                self.history_shares[code] = [0.0] * current_day_count
+                
+            sh = sum(lot.shares for lot in self.lots.get(code, []))
+            self.history_shares[code].append(sh)
             if sh > 0:
                 nv = daily_unit_navs.get(code, np.nan)
                 if np.isfinite(nv) and nv > 0:
@@ -137,15 +145,15 @@ class ForwardLedger:
         self.history_total_asset.append(tot_asset)
         
     def to_dataframe(self) -> pd.DataFrame:
-        """Export daily history as a structured pandas DataFrame."""
+        """Export daily history as a structured pandas DataFrame with deterministic column ordering."""
         df = pd.DataFrame({
             "cash": self.history_cash,
             "cumulative_invested": self.history_invested,
             "market_value": self.history_market_val,
             "total_asset": self.history_total_asset
         }, index=pd.DatetimeIndex(self.history_dates))
-        for code, sh_list in self.history_shares.items():
-            df[f"shares_{code}"] = sh_list
+        for code in sorted(self.history_shares.keys()):
+            df[f"shares_{code}"] = self.history_shares[code]
         return df
 
 def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
@@ -205,8 +213,12 @@ def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
             for code, weight in target_weights.items():
                 alloc = deposit_amt * weight
                 px = daily_px.get(code, np.nan)
+                fee_rate = resolve_sub_fee(code, default_fee=sub_fee)
                 if np.isfinite(px) and px > 0:
-                    ledger.buy(code, dt, px, alloc, sub_fee_rate=sub_fee)
+                    ledger.buy(code, dt, px, alloc, sub_fee_rate=fee_rate)
+                else:
+                    import warnings
+                    warnings.warn(f"Cannot allocate {alloc:.2f} to {code} on {dt.strftime('%Y-%m-%d')}: missing NAV. Cash retained.")
 
                     
         # Step 2: Periodic Rebalance (if scheduled and after initial day)
@@ -236,7 +248,8 @@ def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
                 cur_val = ledger.get_shares(code) * px
                 if cur_val < target_val - 1.0 and ledger.cash > 1.0:
                     needed_amt = min(target_val - cur_val, ledger.cash)
-                    ledger.buy(code, dt, px, needed_amt, sub_fee_rate=sub_fee)
+                    fee_rate = resolve_sub_fee(code, default_fee=sub_fee)
+                    ledger.buy(code, dt, px, needed_amt, sub_fee_rate=fee_rate)
                     
         # Step 3: Record end of day valuation
         day_navs = {col: nav_df.loc[dt, col] for col in nav_df.columns}

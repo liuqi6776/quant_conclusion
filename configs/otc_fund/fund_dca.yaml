@@ -41,6 +41,16 @@ portfolios:
       nasdaq_000834: 0.15
       proxy_global_tech: 0.10
 
+  counterfactual_no_active:
+    description: "Counterfactual 7-Asset Passive Benchmark (001917->050002, 017730->000834)"
+    weights:
+      bond_pure_000015: 0.25
+      dividend_100032: 0.10
+      money_market_000198: 0.10
+      csi300_fund_050002: 0.10
+      gold_000216: 0.20
+      nasdaq_000834: 0.25
+
 scenarios:
   lump_plus_monthly_dca:
     initial_lump: 1000000.0

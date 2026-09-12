@@ -26,11 +26,14 @@ from scripts.otc_fund.cashflows import build_cashflow_schedule
 from scripts.otc_fund.ledger import run_chronological_simulation
 from scripts.otc_fund.metrics import evaluate_portfolio
 
+import yaml
+
 PROXY_CSV = os.path.join(REPO_ROOT, "data", "otc_fund", "processed", "asset_class_proxy_panel_2015_2026.csv")
 ROOT_CSV = os.path.join(REPO_ROOT, "data", "otc_fund", "fund_dca_daily_panel_2015_2026.csv")
 DIV_CSV = os.path.join(REPO_ROOT, "data", "otc_fund", "dividend_events.csv")
 MANIFEST_PATH = os.path.join(REPO_ROOT, "data", "otc_fund", "source_manifest.json")
 EXPECTED_METRICS_PATH = os.path.join(REPO_ROOT, "configs", "otc_fund", "expected_metrics.json")
+CONFIG_PATH = os.path.join(REPO_ROOT, "configs", "otc_fund", "fund_dca.yaml")
 
 def get_file_hash(p: str) -> str:
     h = hashlib.sha256()
@@ -63,9 +66,16 @@ def run_audit():
         print(f"   [PASS] {fn}: SHA-256 verified ({real_h[:12]}...)")
 
     # -------------------------------------------------------------
-    # Check 2: Load Expected Metrics Baseline
+    # Check 2: Load Expected Metrics Baseline & YAML Configuration
     # -------------------------------------------------------------
-    print("\n2. Loading baseline configuration & tolerances from expected_metrics.json...")
+    print("\n2. Loading baseline configuration & tolerances from expected_metrics.json and fund_dca.yaml...")
+    assert os.path.exists(CONFIG_PATH), f"Config missing: {CONFIG_PATH}"
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+    weights_7 = cfg["portfolios"]["modified_7_asset"]["weights"]
+    weights_no_active = cfg["portfolios"]["counterfactual_no_active"]["weights"]
+    sub_fee = cfg["fee_model"]["subscription_fee_rate"]
+
     assert os.path.exists(EXPECTED_METRICS_PATH), f"Expected metrics missing: {EXPECTED_METRICS_PATH}"
     with open(EXPECTED_METRICS_PATH, "r", encoding="utf-8") as f:
         exp_data = json.load(f)
@@ -85,17 +95,8 @@ def run_audit():
     dates = df.index
     
     cfs_b = build_cashflow_schedule(dates, initial_lump=0.0, dca_amount=10000.0, dca_freq="monthly")
-    weights_7 = {
-        "bond_pure_000015": 0.25,
-        "dividend_100032": 0.10,
-        "money_market_000198": 0.10,
-        "proxy_quant_a": 0.10,
-        "gold_000216": 0.20,
-        "nasdaq_000834": 0.15,
-        "proxy_global_tech": 0.10
-    }
     
-    _, df_res_b = run_chronological_simulation(dates, df, cfs_b, weights_7, sub_fee=0.0015, dividend_events=div_df)
+    _, df_res_b = run_chronological_simulation(dates, df, cfs_b, weights_7, sub_fee=sub_fee, dividend_events=div_df)
     m_b = evaluate_portfolio(df_res_b["total_asset"], df_res_b["cumulative_invested"], cfs_b, 0.02)
     
     exp_b = exp_data["scenarios"]["pure_monthly_1w_dca"]["modified_7_asset"]
@@ -133,7 +134,7 @@ def run_audit():
     # -------------------------------------------------------------
     print("\n4. Executing live chronological simulation for Scenario A (7-Asset, 240w invested)...")
     cfs_a = build_cashflow_schedule(dates, initial_lump=1000000.0, dca_amount=10000.0, dca_freq="monthly")
-    _, df_res_a = run_chronological_simulation(dates, df, cfs_a, weights_7, sub_fee=0.0015, dividend_events=div_df)
+    _, df_res_a = run_chronological_simulation(dates, df, cfs_a, weights_7, sub_fee=sub_fee, dividend_events=div_df)
     m_a = evaluate_portfolio(df_res_a["total_asset"], df_res_a["cumulative_invested"], cfs_a, 0.02)
     
     exp_a = exp_data["scenarios"]["lump_100w_plus_monthly_1w"]["modified_7_asset"]
@@ -161,15 +162,7 @@ def run_audit():
     # Check 5: Live Counterfactual (No-Active-Fund) Verification (Q3)
     # -------------------------------------------------------------
     print("\n5. Executing live Counterfactual (No-Active-Fund) simulation...")
-    weights_no_active = {
-        "bond_pure_000015": 0.25,
-        "dividend_100032": 0.10,
-        "money_market_000198": 0.10,
-        "csi300_fund_050002": 0.10,
-        "gold_000216": 0.20,
-        "nasdaq_000834": 0.25
-    }
-    _, df_res_no_act_b = run_chronological_simulation(dates, df, cfs_b, weights_no_active, sub_fee=0.0015, dividend_events=div_df)
+    _, df_res_no_act_b = run_chronological_simulation(dates, df, cfs_b, weights_no_active, sub_fee=sub_fee, dividend_events=div_df)
     m_no_act_b = evaluate_portfolio(df_res_no_act_b["total_asset"], df_res_no_act_b["cumulative_invested"], cfs_b, 0.02)
     exp_no_act_b = exp_data["scenarios"]["pure_monthly_1w_dca"]["counterfactual_no_active"]
     diff_val_no_act = abs(m_no_act_b["ending_value"] - exp_no_act_b["ending_value"]) / exp_no_act_b["ending_value"]

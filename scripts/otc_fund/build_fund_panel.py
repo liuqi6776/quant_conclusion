@@ -77,7 +77,8 @@ def extract_raw_fund_dividends(raw_dir: str, code: str, start_date: str, end_dat
     return divs.rename(columns={"div": "dividend_per_share"})[["date", "code", "dividend_per_share", "unit_nav"]]
 
 def build_panels(raw_dir: str, out_dir: str):
-    os.makedirs(PROCESSED_DIR, exist_ok=True)
+    processed_dir = os.path.join(out_dir, "processed")
+    os.makedirs(processed_dir, exist_ok=True)
     
     # Step 1: Establish common trading calendar based on 000015 (domestic debt traded all Chinese trading days)
     s_base = load_fund_raw_nav(raw_dir, "000015")
@@ -88,7 +89,7 @@ def build_panels(raw_dir: str, out_dir: str):
     true_df = pd.DataFrame(index=calendar)
     
     # Load benchmarks
-    sh_index_src = os.path.join(DEFAULT_OUT_DIR, "fund_dca_daily_panel_2015_2026.csv")
+    sh_index_src = os.path.join(out_dir, "fund_dca_daily_panel_2015_2026.csv")
     existing_df = pd.read_csv(sh_index_src, index_col=0, parse_dates=True) if os.path.exists(sh_index_src) else None
     
     if existing_df is not None and "sh_index_000001" in existing_df.columns:
@@ -121,7 +122,11 @@ def build_panels(raw_dir: str, out_dir: str):
     s_000290 = load_fund_raw_nav(raw_dir, "000290").reindex(calendar).ffill()
     s_004998 = load_fund_raw_nav(raw_dir, "004998").reindex(calendar)
     switch_qdii_bond = pd.Timestamp("2017-12-11")
-    ratio_qdii = s_004998.loc[switch_qdii_bond] / s_000290.loc[switch_qdii_bond] if switch_qdii_bond in s_004998 else 1.0
+    ratio_qdii = (s_004998.loc[switch_qdii_bond] / s_000290.loc[switch_qdii_bond]) if (
+        switch_qdii_bond in s_004998 and switch_qdii_bond in s_000290 and 
+        pd.notna(s_000290.loc[switch_qdii_bond]) and s_000290.loc[switch_qdii_bond] > 0 and 
+        pd.notna(s_004998.loc[switch_qdii_bond])
+    ) else 1.0
     proxy_qdii_bond = pd.Series(index=calendar, dtype=float)
     proxy_qdii_bond[calendar < switch_qdii_bond] = s_000290[calendar < switch_qdii_bond] * ratio_qdii
     proxy_qdii_bond[calendar >= switch_qdii_bond] = s_004998[calendar >= switch_qdii_bond].ffill()
@@ -131,7 +136,11 @@ def build_panels(raw_dir: str, out_dir: str):
     s_050002 = load_fund_raw_nav(raw_dir, "050002").reindex(calendar).ffill()
     s_001917 = load_fund_raw_nav(raw_dir, "001917").reindex(calendar)
     switch_quant = pd.Timestamp("2016-03-15")
-    ratio_quant = s_001917.loc[switch_quant] / s_050002.loc[switch_quant] if switch_quant in s_001917 else 1.0
+    ratio_quant = (s_001917.loc[switch_quant] / s_050002.loc[switch_quant]) if (
+        switch_quant in s_001917 and switch_quant in s_050002 and 
+        pd.notna(s_050002.loc[switch_quant]) and s_050002.loc[switch_quant] > 0 and 
+        pd.notna(s_001917.loc[switch_quant])
+    ) else 1.0
     proxy_quant = pd.Series(index=calendar, dtype=float)
     proxy_quant[calendar < switch_quant] = s_050002[calendar < switch_quant] * ratio_quant
     proxy_quant[calendar >= switch_quant] = s_001917[calendar >= switch_quant].ffill()
@@ -141,7 +150,11 @@ def build_panels(raw_dir: str, out_dir: str):
     s_160416 = load_fund_raw_nav(raw_dir, "160416").reindex(calendar).ffill()
     s_501018 = load_fund_raw_nav(raw_dir, "501018").reindex(calendar)
     switch_oil = pd.Timestamp("2016-06-15")
-    ratio_oil = s_501018.loc[switch_oil] / s_160416.loc[switch_oil] if switch_oil in s_501018 else 1.0
+    ratio_oil = (s_501018.loc[switch_oil] / s_160416.loc[switch_oil]) if (
+        switch_oil in s_501018 and switch_oil in s_160416 and 
+        pd.notna(s_160416.loc[switch_oil]) and s_160416.loc[switch_oil] > 0 and 
+        pd.notna(s_501018.loc[switch_oil])
+    ) else 1.0
     proxy_oil = pd.Series(index=calendar, dtype=float)
     proxy_oil[calendar < switch_oil] = s_160416[calendar < switch_oil] * ratio_oil
     proxy_oil[calendar >= switch_oil] = s_501018[calendar >= switch_oil].ffill()
@@ -154,8 +167,16 @@ def build_panels(raw_dir: str, out_dir: str):
     switch_tech1 = pd.Timestamp("2017-01-25")
     switch_tech2 = pd.Timestamp("2023-02-09")
     
-    r_tech1 = s_001668.loc[switch_tech1] / s_000043.loc[switch_tech1]
-    r_tech2 = s_017730.loc[switch_tech2] / s_001668.loc[switch_tech2]
+    r_tech1 = (s_001668.loc[switch_tech1] / s_000043.loc[switch_tech1]) if (
+        switch_tech1 in s_001668 and switch_tech1 in s_000043 and 
+        pd.notna(s_000043.loc[switch_tech1]) and s_000043.loc[switch_tech1] > 0 and 
+        pd.notna(s_001668.loc[switch_tech1])
+    ) else 1.0
+    r_tech2 = (s_017730.loc[switch_tech2] / s_001668.loc[switch_tech2]) if (
+        switch_tech2 in s_017730 and switch_tech2 in s_001668 and 
+        pd.notna(s_001668.loc[switch_tech2]) and s_001668.loc[switch_tech2] > 0 and 
+        pd.notna(s_017730.loc[switch_tech2])
+    ) else 1.0
     
     proxy_tech = pd.Series(index=calendar, dtype=float)
     proxy_tech[calendar < switch_tech1] = s_000043[calendar < switch_tech1] * r_tech1 * r_tech2
@@ -274,26 +295,26 @@ def build_panels(raw_dir: str, out_dir: str):
             })
             
     df_div = pd.DataFrame(dividend_records).sort_values(["date", "target_column"]).reset_index(drop=True)
-    div_csv = os.path.join(DEFAULT_OUT_DIR, "dividend_events.csv")
+    div_csv = os.path.join(out_dir, "dividend_events.csv")
     df_div.to_csv(div_csv, index=False, lineterminator="\n")
     print(f"[OK] Saved dividend events: {div_csv} ({len(df_div)} events)")
     
     # Save CSV and Parquet panels with explicit newline="\n"
-    true_csv = os.path.join(PROCESSED_DIR, "fund_true_nav_panel_2015_2026.csv")
-    true_parquet = os.path.join(PROCESSED_DIR, "fund_true_nav_panel_2015_2026.parquet")
+    true_csv = os.path.join(processed_dir, "fund_true_nav_panel_2015_2026.csv")
+    true_parquet = os.path.join(processed_dir, "fund_true_nav_panel_2015_2026.parquet")
     true_df.to_csv(true_csv, lineterminator="\n")
     true_df.to_parquet(true_parquet)
     print(f"[OK] Saved true fund panel: {true_csv} ({true_df.shape})")
     
-    proxy_csv = os.path.join(PROCESSED_DIR, "asset_class_proxy_panel_2015_2026.csv")
-    proxy_parquet = os.path.join(PROCESSED_DIR, "asset_class_proxy_panel_2015_2026.parquet")
+    proxy_csv = os.path.join(processed_dir, "asset_class_proxy_panel_2015_2026.csv")
+    proxy_parquet = os.path.join(processed_dir, "asset_class_proxy_panel_2015_2026.parquet")
     proxy_df.to_csv(proxy_csv, lineterminator="\n")
     proxy_df.to_parquet(proxy_parquet)
     print(f"[OK] Saved proxy panel: {proxy_csv} ({proxy_df.shape})")
     
     # Save standard root CSV in data/otc_fund/
-    root_csv = os.path.join(DEFAULT_OUT_DIR, "fund_dca_daily_panel_2015_2026.csv")
-    root_parquet = os.path.join(DEFAULT_OUT_DIR, "fund_dca_daily_panel_2015_2026.parquet")
+    root_csv = os.path.join(out_dir, "fund_dca_daily_panel_2015_2026.csv")
+    root_parquet = os.path.join(out_dir, "fund_dca_daily_panel_2015_2026.parquet")
     proxy_df.to_csv(root_csv, lineterminator="\n")
     proxy_df.to_parquet(root_parquet)
     print(f"[OK] Updated root panel: {root_csv}")
@@ -371,7 +392,7 @@ def build_panels(raw_dir: str, out_dir: str):
             "notes": f"研究用连续拼接历史代理序列，包含 {len(lineage)} 个生命周期阶段"
         }
         
-    manifest_path = os.path.join(DEFAULT_OUT_DIR, "source_manifest.json")
+    manifest_path = os.path.join(out_dir, "source_manifest.json")
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
     print(f"[OK] Wrote source manifest with verified hashes: {manifest_path}")
