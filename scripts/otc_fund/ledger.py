@@ -32,6 +32,8 @@ class ForwardLedger:
         self.cash = float(cash)
         self.cumulative_invested = float(cash)
         self.lots: Dict[str, List[Lot]] = {}
+        self.total_sub_fees_paid = 0.0
+        self.total_red_fees_paid = 0.0
         
         # Daily history records
         self.history_dates: List[pd.Timestamp] = []
@@ -40,6 +42,10 @@ class ForwardLedger:
         self.history_market_val: List[float] = []
         self.history_total_asset: List[float] = []
         self.history_shares: Dict[str, List[float]] = {}
+        
+    @property
+    def total_fees_paid(self) -> float:
+        return self.total_sub_fees_paid + self.total_red_fees_paid
         
     def get_shares(self, code: str) -> float:
         return sum(lot.shares for lot in self.lots.get(code, []))
@@ -69,6 +75,7 @@ class ForwardLedger:
         new_shares = net_inv / unit_nav
         
         self.cash -= amount
+        self.total_sub_fees_paid += fee
         self.lots.setdefault(code, []).append(Lot(new_shares, date, unit_nav))
         return new_shares
         
@@ -87,6 +94,7 @@ class ForwardLedger:
         
         self.lots[code] = [Lot(sh, d, p) for sh, d, p in remaining_tuples]
         self.cash += net
+        self.total_red_fees_paid += (gross - net)
         return gross, net
         
     def process_dividend(self, code: str, date: pd.Timestamp, unit_nav: float, dividend_per_share: float, mode: str = "reinvest"):

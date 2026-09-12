@@ -15,7 +15,8 @@
     "fund_true_nav_panel_2015_2026.csv": "8093be796b4b231b934d4fbff0d3edb76548342990abe3623b62c27dfe0f265e",
     "asset_class_proxy_panel_2015_2026.csv": "f7dc29ebe24f9790e260f980b312b09e7e2faca002148e54a0b69dc0c1e009d5",
     "fund_dca_daily_panel_2015_2026.csv": "f7dc29ebe24f9790e260f980b312b09e7e2faca002148e54a0b69dc0c1e009d5",
-    "dividend_events.csv": "763e072f3bfeb3f161a9d93de7ce9ce57e3ab6d0a4ec03a5e30b42722778b83c"
+    "dividend_events.csv": "763e072f3bfeb3f161a9d93de7ce9ce57e3ab6d0a4ec03a5e30b42722778b83c",
+    "usd_cny_daily_2015_2026.csv": "456b776adbc6594bb99823e2e3d054153c54e30485d526430c0fe968439810f9"
   },
   "proxy_lineages": {
     "proxy_global_tech": [
