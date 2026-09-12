@@ -120,9 +120,9 @@ def run_audit():
     # Check intermediate ledger hash (Q1)
     sim_ledger_hash_b = hashlib.sha256(df_res_b.to_csv(lineterminator="\n", float_format="%.4f").encode("utf-8")).hexdigest()
     exp_hash_b = exp_b.get("ledger_hash")
-    if exp_hash_b:
-        assert sim_ledger_hash_b == exp_hash_b, f"Scenario B Intermediate Ledger Hash mismatch: sim={sim_ledger_hash_b} != exp={exp_hash_b}"
-        print(f"   [PASS] Scenario B Ledger Hash : {sim_ledger_hash_b[:16]}... (exact match)")
+    assert exp_hash_b, "Missing ledger_hash in expected_metrics.json for Scenario B"
+    assert sim_ledger_hash_b == exp_hash_b, f"Scenario B Intermediate Ledger Hash mismatch: sim={sim_ledger_hash_b} != exp={exp_hash_b}"
+    print(f"   [PASS] Scenario B Ledger Hash : {sim_ledger_hash_b[:16]}... (exact match)")
         
     print(f"   [PASS] Scenario B Ending Value: {m_b['ending_value']:,.2f} (expected {exp_b['ending_value']:,.2f}, diff {diff_val_rel*100:.3f}%)")
     print(f"   [PASS] Scenario B XIRR        : {m_b['xirr']*100:.2f}% (expected {exp_b['xirr']*100:.2f}%)")
@@ -150,9 +150,9 @@ def run_audit():
     # Check intermediate ledger hash for Scenario A
     sim_ledger_hash_a = hashlib.sha256(df_res_a.to_csv(lineterminator="\n", float_format="%.4f").encode("utf-8")).hexdigest()
     exp_hash_a = exp_a.get("ledger_hash")
-    if exp_hash_a:
-        assert sim_ledger_hash_a == exp_hash_a, f"Scenario A Intermediate Ledger Hash mismatch: sim={sim_ledger_hash_a} != exp={exp_hash_a}"
-        print(f"   [PASS] Scenario A Ledger Hash : {sim_ledger_hash_a[:16]}... (exact match)")
+    assert exp_hash_a, "Missing ledger_hash in expected_metrics.json for Scenario A"
+    assert sim_ledger_hash_a == exp_hash_a, f"Scenario A Intermediate Ledger Hash mismatch: sim={sim_ledger_hash_a} != exp={exp_hash_a}"
+    print(f"   [PASS] Scenario A Ledger Hash : {sim_ledger_hash_a[:16]}... (exact match)")
         
     print(f"   [PASS] Scenario A Ending Value: {m_a['ending_value']:,.2f} (expected {exp_a['ending_value']:,.2f}, diff {diff_val_rel_a*100:.3f}%)")
     print(f"   [PASS] Scenario A XIRR        : {m_a['xirr']*100:.2f}% (expected {exp_a['xirr']*100:.2f}%)")

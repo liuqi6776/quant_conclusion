@@ -51,11 +51,19 @@ def calc_xirr(cash_flows: List[float], dates: List[pd.Timestamp]) -> float:
                 pass
         return np.nan
 
-def calc_twr_curve(portfolio_values: pd.Series, cash_flow_series: pd.Series) -> pd.Series:
+def calc_twr_curve(portfolio_values: pd.Series, cash_flow_series: pd.Series, net_sub_fee: bool = True) -> pd.Series:
     """
     Calculate standard Time-Weighted Return (TWR) unit asset value curve (starting at 1.0).
     R_t = (V_t - C_t) / V_{t-1}, where C_t is external net inflow on day t.
     TWR_t = prod(1 + R_tau).
+
+    Note on Fee Convention (M7 / GIPS Net-of-Fees):
+    By default (net_sub_fee=True), external cash flow C_t represents gross cash deposit.
+    Because OTC mutual fund front-end subscription fees (e.g. 0.15%) are deducted immediately from cash upon deposit,
+    the actual portfolio starting value on deposit day is V_t = V_{t-1} + C_t - Fee.
+    Consequently, on deposit days: (V_t - C_t) / V_{t-1} reflects a slight initial negative return (-Fee / V_{t-1}).
+    This adheres to the Global Investment Performance Standards (GIPS) net-of-fees presentation standard,
+    faithfully capturing transaction frictions borne by real investors.
     """
     twr_units = pd.Series(1.0, index=portfolio_values.index, dtype=float)
     

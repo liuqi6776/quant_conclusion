@@ -16,8 +16,6 @@ import pandas as pd
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, REPO_ROOT)
 
-from scripts.otc_fund.instruments import resolve_sub_fee
-from scripts.otc_fund.cashflows import build_cashflow_schedule
 from scripts.otc_fund.ledger import run_chronological_simulation
 
 PROXY_CSV = os.path.join(REPO_ROOT, "data", "otc_fund", "processed", "asset_class_proxy_panel_2015_2026.csv")
@@ -38,7 +36,16 @@ def test_independent_numpy_reconciliation_scenario_b():
 
     df = pd.read_csv(PROXY_CSV, index_col=0, parse_dates=True)
     dates = df.index
-    cfs = build_cashflow_schedule(dates, initial_lump=0.0, dca_amount=10000.0, dca_freq="monthly")
+
+    # Fully decoupled inline cashflow schedule generation (first trading day of each month)
+    cfs = pd.Series(0.0, index=dates, dtype=float)
+    last_ym = None
+    for dt in dates:
+        ym = (dt.year, dt.month)
+        if ym != last_ym:
+            cfs.loc[dt] = 10000.0
+            last_ym = ym
+
     div_df = pd.read_csv(DIV_CSV, parse_dates=["date"]) if os.path.exists(DIV_CSV) else None
 
     # 1. Independent Raw Numpy Computation
@@ -67,7 +74,8 @@ def test_independent_numpy_reconciliation_scenario_b():
             total_invested += amt
             for col, w in weights.items():
                 alloc = amt * w
-                fee = resolve_sub_fee(col, default_fee=sub_fee_default)
+                # Fully decoupled inline fee rule: money market has 0.0 fee; others have sub_fee_default
+                fee = 0.0 if "money_market" in col or "sh_index" in col else sub_fee_default
                 net_inv = alloc / (1.0 + fee)
                 nav = float(df.loc[dt, col])
                 shares[col] += net_inv / nav

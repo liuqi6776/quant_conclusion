@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
+# WARNING: DEPRECATED PROTOTYPE / 模型有误，严禁实盘使用
 """
-Option Tail-Risk Hedging Simulation Module
-==========================================
-Models protective out-of-the-money (OTM) put option tail-risk hedging:
-- Annualized insurance premium budget: 0.5% - 1.5% of equity exposure.
-- Payout triggers during severe equity market crashes (e.g. 2015 crash, 2018 drop).
-- Evaluates cost-of-carry drag vs drawdown protection.
+Option Tail-Risk Hedging Simulation Module (DEPRECATED)
+======================================================
+WARNING: DEPRECATED PROTOTYPE / 模型有误，严禁实盘使用
+This module is a legacy conceptual prototype that lacks rigorous implied
+volatility skew, Greeks dynamics, and calendar theta decay modeling.
+Runtime execution is disabled.
 """
 
 from typing import Dict, List, Tuple
+import warnings
 import numpy as np
 import pandas as pd
 
@@ -17,9 +19,17 @@ def simulate_tail_hedge_payout(equity_returns: pd.Series,
                                annual_budget_pct: float = 0.01) -> pd.Series:
     """
     Simulates monthly rolling protective put overlay on equity holdings.
-    - strike_otm_pct: OTM threshold for crash payout (e.g. -10% monthly drop).
-    - annual_budget_pct: cost of insurance deducted pro-rata daily (e.g. 1.0% annual).
+    Deprecated: Raises NotImplementedError upon invocation.
     """
+    warnings.warn(
+        "option_tail_hedge is a deprecated heuristic prototype and strictly disabled.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    raise NotImplementedError(
+        "option_tail_hedge is a deprecated heuristic prototype and disabled for live trading. "
+        "Real implied volatility surface and theta decay modeling required."
+    )
     daily_premium_drag = (1.0 + annual_budget_pct) ** (1.0 / 252.0) - 1.0
     
     # Monthly returns for payoff calculation

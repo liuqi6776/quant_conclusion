@@ -53,7 +53,7 @@
       {
         "stage": 2,
         "code": "004998",
-        "name": "南方亚洲美元收益债券(QDII)A",
+        "name": "长信全球债券(QDII)人民币",
         "start": "2017-12-11",
         "end": "2026-08-06"
       }
@@ -470,5 +470,21 @@
       ],
       "notes": "研究用连续拼接历史代理序列，包含 2 个生命周期阶段"
     }
+  },
+  "dividend_coverage_audit": {
+    "audit_date": "2026-09-12",
+    "scope": "All active and proxy funds during their portfolio tenure (2015-2026)",
+    "verified_events_in_dividend_events_csv": 4,
+    "zero_dividend_holdings_verified_against_raw_parquets": [
+      {"code": "000216", "name": "华安黄金易ETF联接A", "tenure": "2015-01-05 to 2026-08-06", "events_found": 0, "rationale": "Gold ETF feeder fund distributes no cash dividends"},
+      {"code": "000198", "name": "天弘余额宝货币", "tenure": "2015-01-05 to 2026-08-06", "events_found": 0, "rationale": "Daily reinvesting money market fund, 0 cash dividend"},
+      {"code": "004998", "name": "长信全球债券(QDII)人民币", "tenure": "2017-12-11 to 2026-08-06", "events_found": 0, "rationale": "No cash distribution in raw database during tenure"},
+      {"code": "000290", "name": "鹏华全球高收益债(QDII)A", "tenure": "2015-01-05 to 2017-12-10", "events_found": 0, "rationale": "No cash distribution during proxy tenure"},
+      {"code": "000043", "name": "嘉实美国成长股票(QDII)", "tenure": "2015-01-05 to 2017-01-24", "events_found": 0, "rationale": "Single 2019-01-02 dividend occurred after proxy end date (2017-01-24)"},
+      {"code": "001668", "name": "汇添富全球移动互联混合(QDII)A", "tenure": "2017-01-25 to 2023-02-08", "events_found": 0, "rationale": "No cash distribution during proxy tenure"},
+      {"code": "160416", "name": "华安标普全球石油指数(LOF)A", "tenure": "2015-01-05 to 2016-06-14", "events_found": 0, "rationale": "No cash distribution during proxy tenure"},
+      {"code": "501018", "name": "南方原油A(QDII-FOF)", "tenure": "2016-06-15 to 2026-08-06", "events_found": 0, "rationale": "No cash distribution in raw database during tenure"},
+      {"code": "017730", "name": "嘉实全球产业升级A", "tenure": "2023-02-09 to 2026-08-06", "events_found": 0, "rationale": "No cash distribution in raw database during tenure"}
+    ]
   }
 }

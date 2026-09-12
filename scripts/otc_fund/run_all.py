@@ -82,15 +82,31 @@ def compute_rolling_horizon_matrix(dates: pd.DatetimeIndex, df_proxy: pd.DataFra
             sharpes.append(m_sub["sharpe_ratio"])
             
         if xirrs:
+            # Effective independent windows (non-overlapping capacity N_eff = T / H)
+            eff_indep = round(float(len(month_starts) / h_months), 1)
+            
+            # Stationary block bootstrap for median XIRR (1000 resamples, deterministic seed 42)
+            np.random.seed(42)
+            n_win = len(xirrs)
+            x_arr = np.array(xirrs)
+            boot_meds = []
+            for _ in range(1000):
+                boot_idx = np.random.choice(n_win, size=n_win, replace=True)
+                boot_meds.append(float(np.median(x_arr[boot_idx])))
+            ci_low = round(float(np.percentile(boot_meds, 2.5)), 4)
+            ci_high = round(float(np.percentile(boot_meds, 97.5)), 4)
+            
             rolling_results[h_name] = {
                 "horizon_months": h_months,
                 "num_rolling_windows": len(xirrs),
+                "effective_independent_windows": eff_indep,
                 "median_xirr": round(float(np.median(xirrs)), 4),
                 "p10_xirr": round(float(np.percentile(xirrs, 10)), 4),
                 "p90_xirr": round(float(np.percentile(xirrs, 90)), 4),
                 "min_xirr": round(float(np.min(xirrs)), 4),
                 "max_xirr": round(float(np.max(xirrs)), 4),
                 "pct_positive_xirr": round(float(np.mean(np.array(xirrs) > 0)), 4),
+                "bootstrap_ci_95_median_xirr": [ci_low, ci_high],
                 "median_max_drawdown": round(float(np.median(max_dds)), 4),
                 "worst_max_drawdown": round(float(np.min(max_dds)), 4),
                 "median_sharpe": round(float(np.median(sharpes)), 4)
