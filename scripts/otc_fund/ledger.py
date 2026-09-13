@@ -10,7 +10,7 @@ Guarantees:
 5. FIFO redemption fee lot tracking.
 """
 import os
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional, Any, Union
 import pandas as pd
 import numpy as np
 
@@ -167,7 +167,7 @@ class ForwardLedger:
 def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
                                  nav_df: pd.DataFrame,
                                  cashflow_schedule: Dict[pd.Timestamp, float],
-                                 target_weights: Dict[str, float],
+                                 target_weights: Union[Dict[str, float], Dict[pd.Timestamp, Dict[str, float]]],
                                  sub_fee: float = 0.0015,
                                  rebalance_freq: Optional[str] = None,
                                  dividend_events: Optional[pd.DataFrame] = None) -> Tuple[ForwardLedger, pd.DataFrame]:
@@ -179,6 +179,9 @@ def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
     3. Buy / allocate on dt using known unit_nav.
     4. Rebalance if scheduled.
     5. Record closing valuation.
+
+    Supports both static target weights (Dict[str, float]) and dynamic time-varying
+    walk-forward schedules (Dict[pd.Timestamp, Dict[str, float]]).
     """
     ledger = ForwardLedger()
     
@@ -193,6 +196,19 @@ def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
         for dt_val, grp in dividend_events.groupby(pd.to_datetime(dividend_events["date"])):
             div_map[pd.Timestamp(dt_val)] = grp
             
+    # Handle static vs dynamic target weights schedule
+    is_dynamic_weights = False
+    if isinstance(target_weights, dict) and len(target_weights) > 0:
+        first_val = next(iter(target_weights.values()))
+        if isinstance(first_val, dict):
+            is_dynamic_weights = True
+            sorted_rebal_dts = sorted(target_weights.keys())
+            active_weights = target_weights[sorted_rebal_dts[0]]
+        else:
+            active_weights = target_weights
+    else:
+        active_weights = target_weights
+
     # Pre-identify rebalancing dates if periodic rebalance enabled
     rebal_dates = set()
     if rebalance_freq == "quarterly":
@@ -200,6 +216,10 @@ def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
             rebal_dates.add(grp.index[0])
             
     for dt in trading_dates:
+        # If dynamic weights, update active weights on transition dates
+        if is_dynamic_weights and dt in target_weights:
+            active_weights = target_weights[dt]
+
         # Step 0: Process dividend events for existing holdings as of day start
         if dt in div_map:
             grp = div_map[dt]
@@ -216,9 +236,9 @@ def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
             deposit_amt = cashflow_schedule[dt]
             ledger.deposit(dt, deposit_amt)
             
-            # Allocate newly deposited cash according to target weights
-            daily_px = {col: nav_df.loc[dt, col] for col in target_weights.keys() if col in nav_df.columns}
-            for code, weight in target_weights.items():
+            # Allocate newly deposited cash according to active weights
+            daily_px = {col: nav_df.loc[dt, col] for col in active_weights.keys() if col in nav_df.columns}
+            for code, weight in active_weights.items():
                 alloc = deposit_amt * weight
                 px = daily_px.get(code, np.nan)
                 fee_rate = resolve_sub_fee(code, default_fee=sub_fee)
@@ -231,13 +251,13 @@ def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
                     
         # Step 2: Periodic Rebalance (if scheduled and after initial day)
         if rebalance_freq and dt in rebal_dates and dt != trading_dates[0]:
-            daily_px = {col: nav_df.loc[dt, col] for col in target_weights.keys() if col in nav_df.columns}
+            daily_px = {col: nav_df.loc[dt, col] for col in active_weights.keys() if col in nav_df.columns}
             # Current total valuation
-            cur_mv = sum(ledger.get_shares(c) * daily_px[c] for c in target_weights.keys() if np.isfinite(daily_px.get(c, np.nan)))
+            cur_mv = sum(ledger.get_shares(c) * daily_px[c] for c in active_weights.keys() if np.isfinite(daily_px.get(c, np.nan)))
             cur_tot = ledger.cash + cur_mv
             
             # Sell overweighted positions first
-            for code, target_w in target_weights.items():
+            for code, target_w in active_weights.items():
                 px = daily_px.get(code, np.nan)
                 if not np.isfinite(px) or px <= 0:
                     continue
@@ -248,7 +268,7 @@ def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
                     ledger.sell(code, dt, px, excess_sh)
                     
             # Buy underweighted positions with available cash
-            for code, target_w in target_weights.items():
+            for code, target_w in active_weights.items():
                 px = daily_px.get(code, np.nan)
                 if not np.isfinite(px) or px <= 0:
                     continue
@@ -259,8 +279,12 @@ def run_chronological_simulation(trading_dates: pd.DatetimeIndex,
                     fee_rate = resolve_sub_fee(code, default_fee=sub_fee)
                     ledger.buy(code, dt, px, needed_amt, sub_fee_rate=fee_rate)
                     
-        # Step 3: Record end of day valuation
-        day_navs = {col: nav_df.loc[dt, col] for col in nav_df.columns}
-        ledger.record_day(dt, day_navs)
+        # Step 3: Record end-of-day valuation
+        all_cols = set(active_weights.keys())
+        if is_dynamic_weights:
+            for w_dict in target_weights.values():
+                all_cols.update(w_dict.keys())
+        daily_px = {col: nav_df.loc[dt, col] for col in all_cols if col in nav_df.columns}
+        ledger.record_day(dt, daily_px)
         
     return ledger, ledger.to_dataframe()
