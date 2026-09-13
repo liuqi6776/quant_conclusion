@@ -215,3 +215,71 @@ def test_correlation_matrix_consistency(stable_doc_content):
             assert v_str in stable_doc_content, f"Correlation pair {cols[i]}-{cols[j]} ({v_str}) missing in doc"
 
 
+def test_forbidden_deprecated_strings(stable_doc_content, dca_doc_content):
+    """
+    Forbidden String Assertion (反向禁止断言):
+    Ensure that deprecated, irreproducible, or erroneous legacy strings from
+    earlier review rounds NEVER silently creep back into the published documentation.
+    """
+    forbidden_list = [
+        "[10.19%, 11.40%]",    # Old i.i.d. 8Y CI (over-optimistic)
+        "[8.59%, 12.79%]",     # Old i.i.d. 5Y CI
+        "[10.17%, 12.33%]",    # Old i.i.d. 3Y CI
+        "南方亚洲美元",          # Deprecated 004998 name
+        "全球高收益债",          # Deprecated 004998 name
+        "334.23",              # Deprecated prototype Open-Loop wealth
+        "343.54",              # Deprecated prototype PC wealth
+        "39,140",              # Deprecated prototype Open-Loop fee
+        "16,205",              # Deprecated prototype PC fee
+        "7.1668",              # Deprecated inaccurate USD/CNY upper bound
+    ]
+
+    for forbidden in forbidden_list:
+        assert forbidden not in stable_doc_content, (
+            f"Forbidden deprecated string '{forbidden}' found in otc_fund_stable_portfolio.md"
+        )
+        assert forbidden not in dca_doc_content, (
+            f"Forbidden deprecated string '{forbidden}' found in otc_fund_dca_2015_2026.md"
+        )
+
+
+def test_scenario_a_yearly_evolution_consistency(dca_doc_content):
+    """Verify all 12 years of Scenario A intermediate yearly evolution match exact ledger."""
+    yearly_expected = [
+        ("2015", "121.60 万元", "+9.60 万元", "+8.57%"),
+        ("2016", "140.32 万元", "+16.32 万元", "+13.16%"),
+        ("2017", "168.26 万元", "+32.26 万元", "+23.72%"),
+        ("2018", "176.95 万元", "+28.95 万元", "+19.56%"),
+        ("2019", "228.13 万元", "+68.13 万元", "+42.58%"),
+        ("2020", "294.94 万元", "+122.94 万元", "+71.48%"),
+        ("2021", "331.30 万元", "+147.30 万元", "+80.05%"),
+        ("2022", "312.27 万元", "+116.27 万元", "+59.32%"),
+        ("2023", "393.70 万元", "+185.70 万元", "+89.28%"),
+        ("2024", "479.56 万元", "+259.56 万元", "+117.98%"),
+        ("2025", "627.96 万元", "+395.96 万元", "+170.67%"),
+        ("2026", "711.08 万元", "+471.08 万元", "+196.28%"),
+    ]
+    for year, asset_val, net_profit, roi in yearly_expected:
+        assert year in dca_doc_content
+        assert asset_val in dca_doc_content, f"Scenario A {year} asset {asset_val} missing in DCA doc"
+        assert net_profit in dca_doc_content, f"Scenario A {year} profit {net_profit} missing in DCA doc"
+        assert roi in dca_doc_content, f"Scenario A {year} ROI {roi} missing in DCA doc"
+
+
+def test_scenario_b_custom_capital_ratio_drawdown_consistency(expected_metrics, dca_doc_content):
+    """Verify custom capital ratio drawdown row in Scenario B matches expected_metrics."""
+    sc_b = expected_metrics["scenarios"]["pure_monthly_1w_dca"]
+    dd_7 = f"{sc_b['modified_7_asset']['custom_capital_ratio_drawdown'] * 100:.2f}%"
+    dd_9 = f"{sc_b['canonical_9_asset']['custom_capital_ratio_drawdown'] * 100:.2f}%"
+    dd_pb = f"{sc_b['passive_broad_index']['custom_capital_ratio_drawdown'] * 100:.2f}%"
+    dd_sh = f"{sc_b['shanghai_index']['custom_capital_ratio_drawdown'] * 100:.2f}%"
+    dd_300 = f"{sc_b['csi300_fund']['custom_capital_ratio_drawdown'] * 100:.2f}%"
+
+    assert dd_7 in dca_doc_content, f"Custom DD 7-asset {dd_7} missing in DCA doc"
+    assert dd_9 in dca_doc_content, f"Custom DD 9-asset {dd_9} missing in DCA doc"
+    assert dd_pb in dca_doc_content, f"Custom DD passive broad {dd_pb} missing in DCA doc"
+    assert dd_sh in dca_doc_content, f"Custom DD shanghai {dd_sh} missing in DCA doc"
+    assert dd_300 in dca_doc_content, f"Custom DD CSI300 {dd_300} missing in DCA doc"
+
+
+

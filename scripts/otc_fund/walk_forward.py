@@ -94,26 +94,29 @@ def generate_walk_forward_schedule(trading_dates: pd.DatetimeIndex,
     if len(avail_dates) == 0:
         return []
 
-    cur_year = avail_dates[0].year
-    end_year = end_dt.year
-
-    for yr in range(cur_year, end_year + 1):
-        year_dates = trading_dates[trading_dates.year == yr]
-        if len(year_dates) == 0:
+    cur_target = pd.Timestamp(f"{avail_dates[0].year}-01-01")
+    while cur_target <= end_dt:
+        step_avail = trading_dates[trading_dates >= cur_target]
+        if len(step_avail) == 0:
+            break
+        rebal_dt = step_avail[0]
+        train_end_candidates = trading_dates[trading_dates < rebal_dt]
+        if len(train_end_candidates) == 0:
+            cur_target += pd.DateOffset(months=step_months)
             continue
-        rebal_dt = year_dates[0]
-        train_end = trading_dates[trading_dates < rebal_dt][-1]
-        train_start = trading_dates[trading_dates <= (train_end - pd.DateOffset(months=train_months))]
-        train_start_dt = train_start[-1] if len(train_start) > 0 else start_dt
+        train_end = train_end_candidates[-1]
+        train_start_candidates = trading_dates[trading_dates <= (train_end - pd.DateOffset(months=train_months))]
+        train_start_dt = train_start_candidates[-1] if len(train_start_candidates) > 0 else start_dt
 
         assert train_end < rebal_dt, f"Temporal leakage: train_end {train_end} >= rebal_dt {rebal_dt}"
 
         schedule.append({
-            'rebalance_year': yr,
+            'rebalance_year': rebal_dt.year,
             'rebalance_date': rebal_dt,
             'train_start_date': train_start_dt,
             'train_end_date': train_end
         })
+        cur_target += pd.DateOffset(months=step_months)
 
     return schedule
 

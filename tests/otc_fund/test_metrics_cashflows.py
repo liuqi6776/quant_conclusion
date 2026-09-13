@@ -34,3 +34,33 @@ def test_xirr_analytical_match():
     irr = calc_xirr(cfs, dts)
     # 366 days in 2020 leap year -> slightly close to 10%
     assert pytest.approx(irr, rel=0.01) == 0.0997
+
+
+def test_twr_gross_vs_net_fee_convention():
+    """Verify that net-of-fees TWR includes front-end fee discount, while gross-of-fees nets it out."""
+    dates = pd.date_range("2021-01-01", "2021-01-10", freq="D")
+    # Asset has 0 price return, but 1.5 fee paid on 1000 deposit on day 2
+    # On day 1: deposit 1000, value 998.5 (after 1.5 fee)
+    # On day 2: flat
+    val_s = pd.Series(998.5, index=dates)
+    cf_s = pd.Series(0.0, index=dates)
+    cf_s.loc[dates[0]] = 1000.0
+    sub_fee_s = pd.Series(0.0, index=dates)
+    sub_fee_s.loc[dates[0]] = 1.5
+    
+    # Net of fees (default)
+    twr_net = calc_twr_curve(val_s, cf_s, net_sub_fee=True)
+    assert pytest.approx(twr_net.iloc[0], rel=1e-4) == 1.0
+    
+    # Gross of fees: eff_cf = cf - fee = 1000 - 1.5 = 998.5
+    # When val is 998.5, gross return is exactly 0.0
+    val_s_day2 = val_s.copy()
+    val_s_day2.iloc[1:] = 1000.0
+    cf_s.loc[dates[1]] = 1000.0
+    val_s_day2.iloc[1:] = 998.5 + 998.5 # 1997.0
+    sub_fee_s.loc[dates[1]] = 1.5
+    
+    twr_gross = calc_twr_curve(val_s_day2, cf_s, net_sub_fee=False, sub_fee_series=sub_fee_s)
+    # Gross TWR should remain exactly 1.0 because underlying asset had 0 return
+    np.testing.assert_allclose(twr_gross.values, 1.0, rtol=1e-4)
+

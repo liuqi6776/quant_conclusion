@@ -136,3 +136,17 @@ def test_walk_forward_deterministic_reproducibility(panel_data):
     for dt in w1:
         for a in w1[dt]:
             assert abs(w1[dt][a] - w2[dt][a]) < 1e-8, f"Non-deterministic weight for {a} on {dt}"
+
+
+def test_walk_forward_step_months_configurable(panel_data):
+    """Verify that step_months parameter is respected and adjusts schedule frequency."""
+    dates = panel_data.index
+    sched_12m = generate_walk_forward_schedule(dates, train_months=36, step_months=12)
+    sched_6m = generate_walk_forward_schedule(dates, train_months=36, step_months=6)
+
+    assert len(sched_12m) == 9, f"Expected 9 annual steps, got {len(sched_12m)}"
+    assert len(sched_6m) >= 17, f"Expected at least 17 semi-annual steps, got {len(sched_6m)}"
+    # All steps must satisfy temporal ordering
+    for s in sched_6m:
+        assert s["train_end_date"] < s["rebalance_date"]
+

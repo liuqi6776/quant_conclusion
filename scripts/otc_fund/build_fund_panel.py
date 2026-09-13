@@ -337,16 +337,19 @@ def build_panels(raw_dir: str, out_dir: str):
             "end_date": END_DATE,
             "total_trading_days": len(calendar)
         },
-        "files": {
-            "fund_true_nav_panel_2015_2026.csv": get_file_hash(true_csv),
-            "asset_class_proxy_panel_2015_2026.csv": get_file_hash(proxy_csv),
-            "fund_dca_daily_panel_2015_2026.csv": get_file_hash(root_csv),
-            "dividend_events.csv": get_file_hash(div_csv),
-            "usd_cny_daily_2015_2026.csv": get_file_hash(os.path.join(out_dir, "usd_cny_daily_2015_2026.csv"))
-        },
+        "files": {},
         "proxy_lineages": PROXY_LINEAGES,
         "columns": {}
     }
+    
+    # Dynamically scan all CSV files in processed_dir and out_dir to prevent omitting any data files
+    manifest_files = {}
+    for folder in [processed_dir, out_dir]:
+        if os.path.exists(folder):
+            for f in sorted(os.listdir(folder)):
+                if f.endswith(".csv"):
+                    manifest_files[f] = get_file_hash(os.path.join(folder, f))
+    manifest["files"] = manifest_files
     
     # Register core funds
     for code, meta in CORE_FUNDS.items():
@@ -398,6 +401,14 @@ def build_panels(raw_dir: str, out_dir: str):
         }
         
     manifest_path = os.path.join(out_dir, "source_manifest.json")
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f_old:
+                old_m = json.load(f_old)
+                if "dividend_coverage_audit" in old_m:
+                    manifest["dividend_coverage_audit"] = old_m["dividend_coverage_audit"]
+        except Exception:
+            pass
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
     print(f"[OK] Wrote source manifest with verified hashes: {manifest_path}")

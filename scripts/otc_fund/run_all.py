@@ -351,6 +351,45 @@ def run_pipeline():
     print("--> Running Rolling Horizon Matrix (3Y, 5Y, 8Y DCA)...")
     rolling_matrix_7 = compute_rolling_horizon_matrix(dates, df_proxy, weights_7, sub_fee, div_df, rf_annual)
 
+    # -------------------------------------------------------------
+    # Track 8: Target Volatility 7% Risk Budgeting Experiment
+    # -------------------------------------------------------------
+    print("--> Running Target Volatility 7% Experiment (Open-Loop vs Proportional Control)...")
+    from scripts.otc_fund.vol_target import run_vol_target_simulation
+    vt_weights = {
+        "bond_pure_000015": 0.40,
+        "dividend_100032": 0.20,
+        "gold_000216": 0.15,
+        "nasdaq_000834": 0.15,
+        "csi300_fund_050002": 0.10
+    }
+    led_ol, df_ol, diag_ol = run_vol_target_simulation(
+        dates, df_proxy, cfs_lump, vt_weights, mode="open_loop", return_diagnostics=True
+    )
+    res_ol = evaluate_portfolio(df_ol["total_asset"], df_ol["cumulative_invested"], cfs_lump, rf_annual)
+
+    led_pc, df_pc, diag_pc = run_vol_target_simulation(
+        dates, df_proxy, cfs_lump, vt_weights, mode="proportional_control", kp=0.25, return_diagnostics=True
+    )
+    res_pc = evaluate_portfolio(df_pc["total_asset"], df_pc["cumulative_invested"], cfs_lump, rf_annual)
+
+    # -------------------------------------------------------------
+    # Track 9: Walk-Forward Dynamic Risk Parity Simulation
+    # -------------------------------------------------------------
+    print("--> Running Walk-Forward Dynamic Risk Parity Simulation...")
+    from scripts.otc_fund.walk_forward import compute_walk_forward_weights
+    wf_risk_assets = ["bond_pure_000015", "dividend_100032", "proxy_quant_a", "gold_000216", "nasdaq_000834", "proxy_global_tech"]
+    wf_table, wf_sched_weights = compute_walk_forward_weights(
+        df_proxy, wf_risk_assets, initial_weights=weights_7, train_months=36, step_months=12
+    )
+    led_wf, df_wf = run_chronological_simulation(dates, df_proxy, cfs_dca, wf_sched_weights)
+    res_wf_full = evaluate_portfolio(df_wf["total_asset"], df_wf["cumulative_invested"], cfs_dca, rf_annual)
+
+    dates_oos = dates[dates >= pd.Timestamp("2018-01-02")]
+    cfs_oos = build_cashflow_schedule(dates_oos, initial_lump=0.0, dca_amount=10000.0, dca_freq="monthly")
+    led_wf_oos, df_wf_oos = run_chronological_simulation(dates_oos, df_proxy, cfs_oos, wf_sched_weights)
+    res_wf_oos = evaluate_portfolio(df_wf_oos["total_asset"], df_wf_oos["cumulative_invested"], cfs_oos, rf_annual)
+
     # Format JSON payload
     clean_metrics = {
         "version": "2.2.0",
@@ -388,6 +427,7 @@ def run_pipeline():
                     "roi": round(m_no_act_lump["roi"], 4),
                     "xirr": round(m_no_act_lump["xirr"], 4),
                     "twr_max_drawdown": round(m_no_act_lump["twr_max_drawdown"], 4),
+                    "custom_capital_ratio_drawdown": round(m_no_act_lump["custom_capital_ratio_drawdown"], 4),
                     "sharpe_ratio": round(m_no_act_lump["sharpe_ratio"], 4)
                 },
                 "passive_broad_index": {
@@ -396,6 +436,7 @@ def run_pipeline():
                     "roi": round(m_pass_lump["roi"], 4),
                     "xirr": round(m_pass_lump["xirr"], 4),
                     "twr_max_drawdown": round(m_pass_lump["twr_max_drawdown"], 4),
+                    "custom_capital_ratio_drawdown": round(m_pass_lump["custom_capital_ratio_drawdown"], 4),
                     "sharpe_ratio": round(m_pass_lump["sharpe_ratio"], 4)
                 },
                 "shanghai_index": {
@@ -404,6 +445,7 @@ def run_pipeline():
                     "roi": round(m_sh_lump["roi"], 4),
                     "xirr": round(m_sh_lump["xirr"], 4),
                     "twr_max_drawdown": round(m_sh_lump["twr_max_drawdown"], 4),
+                    "custom_capital_ratio_drawdown": round(m_sh_lump["custom_capital_ratio_drawdown"], 4),
                     "sharpe_ratio": round(m_sh_lump["sharpe_ratio"], 4)
                 },
                 "csi300_fund": {
@@ -412,6 +454,7 @@ def run_pipeline():
                     "roi": round(m_300_lump["roi"], 4),
                     "xirr": round(m_300_lump["xirr"], 4),
                     "twr_max_drawdown": round(m_300_lump["twr_max_drawdown"], 4),
+                    "custom_capital_ratio_drawdown": round(m_300_lump["custom_capital_ratio_drawdown"], 4),
                     "sharpe_ratio": round(m_300_lump["sharpe_ratio"], 4)
                 }
             },
@@ -446,6 +489,7 @@ def run_pipeline():
                     "roi": round(m_no_act_dca["roi"], 4),
                     "xirr": round(m_no_act_dca["xirr"], 4),
                     "twr_max_drawdown": round(m_no_act_dca["twr_max_drawdown"], 4),
+                    "custom_capital_ratio_drawdown": round(m_no_act_dca["custom_capital_ratio_drawdown"], 4),
                     "sharpe_ratio": round(m_no_act_dca["sharpe_ratio"], 4)
                 },
                 "passive_broad_index": {
@@ -454,6 +498,7 @@ def run_pipeline():
                     "roi": round(m_pass_dca["roi"], 4),
                     "xirr": round(m_pass_dca["xirr"], 4),
                     "twr_max_drawdown": round(m_pass_dca["twr_max_drawdown"], 4),
+                    "custom_capital_ratio_drawdown": round(m_pass_dca["custom_capital_ratio_drawdown"], 4),
                     "sharpe_ratio": round(m_pass_dca["sharpe_ratio"], 4)
                 },
                 "shanghai_index": {
@@ -462,6 +507,7 @@ def run_pipeline():
                     "roi": round(m_sh_dca["roi"], 4),
                     "xirr": round(m_sh_dca["xirr"], 4),
                     "twr_max_drawdown": round(m_sh_dca["twr_max_drawdown"], 4),
+                    "custom_capital_ratio_drawdown": round(m_sh_dca["custom_capital_ratio_drawdown"], 4),
                     "sharpe_ratio": round(m_sh_dca["sharpe_ratio"], 4)
                 },
                 "csi300_fund": {
@@ -470,6 +516,7 @@ def run_pipeline():
                     "roi": round(m_300_dca["roi"], 4),
                     "xirr": round(m_300_dca["xirr"], 4),
                     "twr_max_drawdown": round(m_300_dca["twr_max_drawdown"], 4),
+                    "custom_capital_ratio_drawdown": round(m_300_dca["custom_capital_ratio_drawdown"], 4),
                     "sharpe_ratio": round(m_300_dca["sharpe_ratio"], 4)
                 }
             },
@@ -491,7 +538,45 @@ def run_pipeline():
             "start_date_sensitivity": start_date_results,
             "sample_split": split_results,
             "leave_one_out_sensitivity": loo_results,
-            "rolling_horizon_matrix": rolling_matrix_7
+            "rolling_horizon_matrix": rolling_matrix_7,
+            "vol_target_proportional_control_experiment": {
+                "invested_total": res_ol["total_invested"],
+                "description": "100w lump sum + 1w/m DCA, 40% bond + 20% dividend + 15% gold + 15% nasdaq + 10% csi300",
+                "open_loop": {
+                    "ending_value": round(res_ol["ending_value"], 2),
+                    "xirr": round(res_ol["xirr"], 4),
+                    "realized_vol": round(diag_ol["realized_vol"], 4),
+                    "vol_tracking_error": round(diag_ol["vol_tracking_error"], 4),
+                    "multiplier_churn": round(diag_ol["multiplier_churn"], 2),
+                    "red_fees_paid": round(diag_ol["red_fees_paid"], 2),
+                    "sharpe_ratio": round(diag_ol["sharpe_ratio"], 4)
+                },
+                "proportional_control_kp_025": {
+                    "ending_value": round(res_pc["ending_value"], 2),
+                    "xirr": round(res_pc["xirr"], 4),
+                    "realized_vol": round(diag_pc["realized_vol"], 4),
+                    "vol_tracking_error": round(diag_pc["vol_tracking_error"], 4),
+                    "multiplier_churn": round(diag_pc["multiplier_churn"], 2),
+                    "red_fees_paid": round(diag_pc["red_fees_paid"], 2),
+                    "sharpe_ratio": round(diag_pc["sharpe_ratio"], 4)
+                }
+            },
+            "walk_forward_dynamic_risk_parity": {
+                "full_period_2015_2026": {
+                    "invested_total": res_wf_full["total_invested"],
+                    "ending_value": round(res_wf_full["ending_value"], 2),
+                    "xirr": round(res_wf_full["xirr"], 4),
+                    "twr_max_drawdown": round(res_wf_full["twr_max_drawdown"], 4),
+                    "sharpe_ratio": round(res_wf_full["sharpe_ratio"], 4)
+                },
+                "pure_oos_2018_2026": {
+                    "invested_total": res_wf_oos["total_invested"],
+                    "ending_value": round(res_wf_oos["ending_value"], 2),
+                    "xirr": round(res_wf_oos["xirr"], 4),
+                    "twr_max_drawdown": round(res_wf_oos["twr_max_drawdown"], 4),
+                    "sharpe_ratio": round(res_wf_oos["sharpe_ratio"], 4)
+                }
+            }
         },
         "metrics_tolerances": {
             "xirr_tolerance": 0.005,
