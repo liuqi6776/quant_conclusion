@@ -153,3 +153,65 @@ def test_start_date_sensitivity_2016(expected_metrics, dca_doc_content):
     expected_pattern = f"{exp_val} ({exp_xirr} / {exp_dd})"
     assert expected_pattern in dca_doc_content, f"Expected '{expected_pattern}' in DCA doc"
 
+
+def test_benchmarks_consistency(expected_metrics, stable_doc_content):
+    """Verify passive broad index and shanghai index match across docs."""
+    p_b = expected_metrics["scenarios"]["pure_monthly_1w_dca"]["passive_broad_index"]
+    sh_b = expected_metrics["scenarios"]["pure_monthly_1w_dca"]["shanghai_index"]
+    
+    val_pb = f"{p_b['ending_value'] / 10000.0:.2f} 万元"
+    xirr_pb = f"{p_b['xirr'] * 100:.2f}%"
+    dd_pb = f"{p_b['twr_max_drawdown'] * 100:.2f}%"
+    assert val_pb in stable_doc_content
+    assert xirr_pb in stable_doc_content
+    assert dd_pb in stable_doc_content
+    
+    val_sh = f"{sh_b['ending_value'] / 10000.0:.2f} 万元"
+    xirr_sh = f"{sh_b['xirr'] * 100:.2f}%"
+    dd_sh = f"{sh_b['twr_max_drawdown'] * 100:.2f}%"
+    assert val_sh in stable_doc_content
+    assert xirr_sh in stable_doc_content
+    assert dd_sh in stable_doc_content
+
+
+def test_vol_target_table_consistency(expected_metrics, stable_doc_content):
+    """Verify all figures in the VolTarget comparison table match expected_metrics."""
+    vt = expected_metrics["scenarios"]["vol_target_proportional_control_experiment"]
+    ol = vt["open_loop"]
+    pc = vt["proportional_control_kp_025"]
+    
+    assert f"{ol['ending_value'] / 10000.0:.2f} 万元" in stable_doc_content
+    assert f"{ol['xirr'] * 100:.2f}%" in stable_doc_content
+    assert f"{ol['realized_vol'] * 100:.2f}%" in stable_doc_content
+    assert f"{ol['vol_tracking_error'] * 100:.2f}%" in stable_doc_content
+    assert f"{ol['multiplier_churn']:.2f}" in stable_doc_content
+    assert f"{ol['sharpe_ratio']:.4f}" in stable_doc_content
+    
+    assert f"{pc['ending_value'] / 10000.0:.2f} 万元" in stable_doc_content
+    assert f"{pc['xirr'] * 100:.2f}%" in stable_doc_content
+    assert f"{pc['realized_vol'] * 100:.2f}%" in stable_doc_content
+    assert f"{pc['vol_tracking_error'] * 100:.2f}%" in stable_doc_content
+    assert f"{pc['multiplier_churn']:.2f}" in stable_doc_content
+    assert f"{pc['sharpe_ratio']:.4f}" in stable_doc_content
+
+
+def test_correlation_matrix_consistency(stable_doc_content):
+    """Verify that the 7-asset correlation table printed in stable_portfolio.md matches panel data."""
+    import pandas as pd
+    panel_p = os.path.join(REPO_ROOT, "data", "otc_fund", "fund_dca_daily_panel_2015_2026.csv")
+    df = pd.read_csv(panel_p, index_col=0, parse_dates=True)
+    cols = ['bond_pure_000015', 'dividend_100032', 'money_market_000198', 'proxy_quant_a', 'gold_000216', 'nasdaq_000834', 'proxy_global_tech']
+    corr = df[cols].pct_change().dropna().corr()
+    
+    # Assert printed mean
+    assert "0.1192" in stable_doc_content
+    assert "0.0996" in stable_doc_content
+    
+    # Check key printed pairs exist in markdown
+    for i in range(len(cols)):
+        for j in range(i + 1, len(cols)):
+            v = corr.iloc[i, j]
+            v_str = f"{v:.3f}"
+            assert v_str in stable_doc_content, f"Correlation pair {cols[i]}-{cols[j]} ({v_str}) missing in doc"
+
+

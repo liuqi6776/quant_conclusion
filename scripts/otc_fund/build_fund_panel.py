@@ -34,13 +34,14 @@ START_DATE = "2015-01-05"
 END_DATE = "2026-08-06"
 
 def get_file_hash(filepath: str) -> str:
-    """Calculate SHA-256 hash of a file on disk."""
+    """Calculate SHA-256 hash of a file on disk with LF normalization for cross-platform reproducibility."""
     if not os.path.exists(filepath):
         return ""
     h = hashlib.sha256()
     with open(filepath, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
+        content = f.read()
+        normalized = content.replace(b"\r\n", b"\n")
+        h.update(normalized)
     return h.hexdigest()
 
 def load_fund_raw_nav(raw_dir: str, code: str) -> pd.Series:
@@ -95,7 +96,10 @@ def build_panels(raw_dir: str, out_dir: str):
     if existing_df is not None and "sh_index_000001" in existing_df.columns:
         true_df["sh_index_000001"] = existing_df["sh_index_000001"].reindex(calendar).ffill()
     else:
-        true_df["sh_index_000001"] = 3200.0
+        raise RuntimeError(
+            f"Required benchmark series 'sh_index_000001' not found in {sh_index_src}. "
+            f"Silent fallback to constant 3200.0 is prohibited."
+        )
         
     true_df["fund_050002"] = load_fund_raw_nav(raw_dir, "050002").reindex(calendar).ffill()
     
@@ -337,7 +341,8 @@ def build_panels(raw_dir: str, out_dir: str):
             "fund_true_nav_panel_2015_2026.csv": get_file_hash(true_csv),
             "asset_class_proxy_panel_2015_2026.csv": get_file_hash(proxy_csv),
             "fund_dca_daily_panel_2015_2026.csv": get_file_hash(root_csv),
-            "dividend_events.csv": get_file_hash(div_csv)
+            "dividend_events.csv": get_file_hash(div_csv),
+            "usd_cny_daily_2015_2026.csv": get_file_hash(os.path.join(out_dir, "usd_cny_daily_2015_2026.csv"))
         },
         "proxy_lineages": PROXY_LINEAGES,
         "columns": {}

@@ -23,7 +23,7 @@ sys.path.insert(0, REPO_ROOT)
 from scripts.otc_fund.instruments import CORE_FUNDS, RESEARCH_PROXIES, BENCHMARKS
 from scripts.otc_fund.cashflows import build_cashflow_schedule
 from scripts.otc_fund.ledger import run_chronological_simulation
-from scripts.otc_fund.metrics import evaluate_portfolio, calc_max_drawdown
+from scripts.otc_fund.metrics import evaluate_portfolio, calc_max_drawdown, circular_block_bootstrap_median_xirr
 
 DATA_PROXY_CSV = os.path.join(REPO_ROOT, "data", "otc_fund", "processed", "asset_class_proxy_panel_2015_2026.csv")
 DATA_TRUE_CSV = os.path.join(REPO_ROOT, "data", "otc_fund", "processed", "fund_true_nav_panel_2015_2026.csv")
@@ -53,6 +53,13 @@ def compute_rolling_horizon_matrix(dates: pd.DatetimeIndex, df_proxy: pd.DataFra
         "8_year": 96
     }
     
+    # Precompute compounded monthly portfolio returns for Circular Block Bootstrap
+    w_cols = [c for c in weights.keys() if c in df_proxy.columns]
+    w_vec = np.array([weights[c] for c in w_cols])
+    w_vec = w_vec / w_vec.sum()
+    daily_port_rets = df_proxy[w_cols].pct_change().fillna(0.0).dot(w_vec)
+    monthly_rets = (1.0 + daily_port_rets).resample("M").prod().values - 1.0
+
     rolling_results = {}
     for h_name, h_months in horizons.items():
         xirrs = []
@@ -85,16 +92,10 @@ def compute_rolling_horizon_matrix(dates: pd.DatetimeIndex, df_proxy: pd.DataFra
             # Effective independent windows (non-overlapping capacity N_eff = T / H)
             eff_indep = round(float(len(month_starts) / h_months), 1)
             
-            # Stationary block bootstrap for median XIRR (1000 resamples, deterministic seed 42)
-            np.random.seed(42)
-            n_win = len(xirrs)
-            x_arr = np.array(xirrs)
-            boot_meds = []
-            for _ in range(1000):
-                boot_idx = np.random.choice(n_win, size=n_win, replace=True)
-                boot_meds.append(float(np.median(x_arr[boot_idx])))
-            ci_low = round(float(np.percentile(boot_meds, 2.5)), 4)
-            ci_high = round(float(np.percentile(boot_meds, 97.5)), 4)
+            # Circular Block Bootstrap (Politis & Romano 1992) for median XIRR (1000 resamples, block length L=12, seed 42)
+            ci_low, ci_high = circular_block_bootstrap_median_xirr(
+                monthly_rets, h_months=h_months, block_length=12, n_resamples=1000, seed=42
+            )
             
             rolling_results[h_name] = {
                 "horizon_months": h_months,

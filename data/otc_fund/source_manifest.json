@@ -16,7 +16,7 @@
     "asset_class_proxy_panel_2015_2026.csv": "f7dc29ebe24f9790e260f980b312b09e7e2faca002148e54a0b69dc0c1e009d5",
     "fund_dca_daily_panel_2015_2026.csv": "f7dc29ebe24f9790e260f980b312b09e7e2faca002148e54a0b69dc0c1e009d5",
     "dividend_events.csv": "763e072f3bfeb3f161a9d93de7ce9ce57e3ab6d0a4ec03a5e30b42722778b83c",
-    "usd_cny_daily_2015_2026.csv": "456b776adbc6594bb99823e2e3d054153c54e30485d526430c0fe968439810f9"
+    "usd_cny_daily_2015_2026.csv": "bd9116179a8b1fc278ddc5fc878733958885232433d4d2d9a011848d8decfe0b"
   },
   "proxy_lineages": {
     "proxy_global_tech": [
@@ -421,7 +421,7 @@
         {
           "stage": 2,
           "code": "004998",
-          "name": "南方亚洲美元收益债券(QDII)A",
+          "name": "长信全球债券(QDII)人民币",
           "start": "2017-12-11",
           "end": "2026-08-06"
         }
@@ -474,7 +474,7 @@
   "dividend_coverage_audit": {
     "audit_date": "2026-09-12",
     "scope": "All active and proxy funds during their portfolio tenure (2015-2026)",
-    "verified_events_in_dividend_events_csv": 4,
+    "verified_events_in_dividend_events_csv": 41,
     "zero_dividend_holdings_verified_against_raw_parquets": [
       {"code": "000216", "name": "华安黄金易ETF联接A", "tenure": "2015-01-05 to 2026-08-06", "events_found": 0, "rationale": "Gold ETF feeder fund distributes no cash dividends"},
       {"code": "000198", "name": "天弘余额宝货币", "tenure": "2015-01-05 to 2026-08-06", "events_found": 0, "rationale": "Daily reinvesting money market fund, 0 cash dividend"},

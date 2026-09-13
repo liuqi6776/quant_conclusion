@@ -46,6 +46,8 @@ def run_vol_target_simulation(trading_dates: pd.DatetimeIndex,
                               vol_window: int = 60,
                               min_weight: float = 0.30,
                               max_weight: float = 1.00,
+                              warmup_multiplier: float = 1.00,
+                              rebal_threshold: float = 1.0,
                               sub_fee: float = 0.0015,
                               mode: str = "open_loop",
                               kp: float = 0.25,
@@ -74,6 +76,10 @@ def run_vol_target_simulation(trading_dates: pd.DatetimeIndex,
         Lower bound on risk asset exposure multiplier (default 0.30).
     max_weight: float
         Upper bound on risk asset exposure multiplier (default 1.00).
+    warmup_multiplier: float
+        Risk asset multiplier during initial warmup period before rolling volatility is available (default 1.00).
+    rebal_threshold: float
+        Minimum currency deviation (in RMB) required to trigger a rebalance trade (default 1.0).
     sub_fee: float
         Default front-end subscription fee rate (0.0015 = 0.15%).
     mode: str
@@ -108,7 +114,7 @@ def run_vol_target_simulation(trading_dates: pd.DatetimeIndex,
         if np.isfinite(rv) and rv > 0.01:
             target_multiplier = float(np.clip(target_vol / rv, min_weight, max_weight))
         else:
-            target_multiplier = float(np.clip(1.0, min_weight, max_weight))
+            target_multiplier = float(np.clip(warmup_multiplier, min_weight, max_weight))
             
         # Monthly rebalance to target exposure (on first trading day of month)
         is_first_day_of_month = (dt == trading_dates[0]) or (dt.month != trading_dates[trading_dates.get_loc(dt) - 1].month)
@@ -143,7 +149,7 @@ def run_vol_target_simulation(trading_dates: pd.DatetimeIndex,
                     continue
                 target_val = cur_tot * target_w
                 cur_val = ledger.get_shares(code) * px
-                if cur_val > target_val + 1.0:
+                if cur_val > target_val + rebal_threshold:
                     excess_sh = (cur_val - target_val) / px
                     ledger.sell(code, dt, px, excess_sh)
                     
@@ -154,7 +160,7 @@ def run_vol_target_simulation(trading_dates: pd.DatetimeIndex,
                     continue
                 target_val = cur_tot * target_w
                 cur_val = ledger.get_shares(code) * px
-                if cur_val < target_val - 1.0 and ledger.cash > 1.0:
+                if cur_val < target_val - rebal_threshold and ledger.cash > rebal_threshold:
                     needed_amt = min(target_val - cur_val, ledger.cash)
                     fee_rate = 0.0 if code == "money_market_000198" else sub_fee
                     ledger.buy(code, dt, px, needed_amt, sub_fee_rate=fee_rate)

@@ -51,19 +51,25 @@ def calc_xirr(cash_flows: List[float], dates: List[pd.Timestamp]) -> float:
                 pass
         return np.nan
 
-def calc_twr_curve(portfolio_values: pd.Series, cash_flow_series: pd.Series, net_sub_fee: bool = True) -> pd.Series:
+def calc_twr_curve(portfolio_values: pd.Series, 
+                   cash_flow_series: pd.Series, 
+                   net_sub_fee: bool = True,
+                   sub_fee_series: Optional[pd.Series] = None) -> pd.Series:
     """
     Calculate standard Time-Weighted Return (TWR) unit asset value curve (starting at 1.0).
     R_t = (V_t - C_t) / V_{t-1}, where C_t is external net inflow on day t.
     TWR_t = prod(1 + R_tau).
 
-    Note on Fee Convention (M7 / GIPS Net-of-Fees):
-    By default (net_sub_fee=True), external cash flow C_t represents gross cash deposit.
-    Because OTC mutual fund front-end subscription fees (e.g. 0.15%) are deducted immediately from cash upon deposit,
-    the actual portfolio starting value on deposit day is V_t = V_{t-1} + C_t - Fee.
-    Consequently, on deposit days: (V_t - C_t) / V_{t-1} reflects a slight initial negative return (-Fee / V_{t-1}).
-    This adheres to the Global Investment Performance Standards (GIPS) net-of-fees presentation standard,
-    faithfully capturing transaction frictions borne by real investors.
+    Fee Convention (M7 / GIPS Presentation):
+    - By default (net_sub_fee=True), external cash flow C_t represents gross cash deposit.
+      Because OTC mutual fund front-end subscription fees (e.g. 0.15%) are deducted immediately from cash upon deposit,
+      the actual portfolio starting value on deposit day is V_t = V_{t-1} + C_t - Fee.
+      Consequently, on deposit days: (V_t - C_t) / V_{t-1} reflects a slight initial negative return (-Fee / V_{t-1}).
+      This adheres to the Global Investment Performance Standards (GIPS) net-of-fees presentation standard,
+      faithfully capturing transaction frictions borne by real investors.
+    - If net_sub_fee=False (Gross-of-fees presentation), the subscription fee is added back to
+      external cash flow (via sub_fee_series) to evaluate pure underlying asset market returns
+      without front-end subscription friction.
     """
     twr_units = pd.Series(1.0, index=portfolio_values.index, dtype=float)
     
@@ -74,14 +80,19 @@ def calc_twr_curve(portfolio_values: pd.Series, cash_flow_series: pd.Series, net
         val = float(portfolio_values.loc[dt])
         cf = float(cash_flow_series.loc[dt]) if dt in cash_flow_series.index else 0.0
         
+        # Adjust external cashflow if gross-of-fees requested
+        if not net_sub_fee and sub_fee_series is not None and dt in sub_fee_series.index:
+            fee_paid = float(sub_fee_series.loc[dt])
+            eff_cf = cf - fee_paid
+        else:
+            eff_cf = cf
+            
         if i == 0:
-            # Day 0: initial deposit cf, initial value val = cf (or net fee)
             cum_unit = 1.0
             prev_val = val
         else:
             if prev_val > 0:
-                # Sub-period rate of return eliminating external inflow
-                sub_ret = (val - cf) / prev_val - 1.0
+                sub_ret = (val - eff_cf) / prev_val - 1.0
                 cum_unit *= (1.0 + sub_ret)
             prev_val = val
             
@@ -193,3 +204,61 @@ def evaluate_portfolio(val_series: pd.Series,
         "sharpe_ratio": sharpe,
         "twr_curve": twr_curve
     }
+
+def fast_dca_xirr(monthly_rets: np.ndarray) -> float:
+    """
+    Fast Newton-Raphson solver for monthly DCA XIRR.
+    Assumes fixed deposit at start of each month over len(monthly_rets) months.
+    """
+    H = len(monthly_rets)
+    if H < 2:
+        return np.nan
+    comp = np.cumprod(1.0 + monthly_rets[::-1])[::-1]
+    v_end = 10000.0 * float(np.sum(comp))
+    r = 0.008  # ~10% annualized initial guess / 12
+    for _ in range(15):
+        discount = (1.0 + r) ** (-np.arange(H + 1))
+        f_val = -10000.0 * np.sum(discount[:H]) + v_end * discount[H]
+        df_val = 10000.0 * np.sum(np.arange(H) * discount[:H] / (1.0 + r)) - H * v_end * discount[H] / (1.0 + r)
+        if abs(df_val) < 1e-12:
+            break
+        diff = f_val / df_val
+        r -= diff
+        if abs(diff) < 1e-7:
+            break
+    if not np.isfinite(r) or r <= -0.99:
+        return np.nan
+    return float((1.0 + r) ** 12.0 - 1.0)
+
+def circular_block_bootstrap_median_xirr(monthly_rets: np.ndarray,
+                                         h_months: int,
+                                         block_length: int = 12,
+                                         n_resamples: int = 1000,
+                                         seed: int = 42) -> Tuple[float, float]:
+    """
+    Circular Block Bootstrap (Politis & Romano 1992) for median DCA XIRR.
+    Resamples blocks of monthly returns to preserve macroeconomic autocorrelation,
+    evaluating rolling DCA paths across reconstructed pseudo-histories.
+    Returns (ci_low_95, ci_high_95) as floats rounded to 4 decimals.
+    """
+    T = len(monthly_rets)
+    if T < h_months:
+        return (np.nan, np.nan)
+        
+    rng = np.random.RandomState(seed)
+    L = max(1, min(block_length, T))
+    n_blocks = int(np.ceil(T / L))
+    circ_rets = np.concatenate([monthly_rets, monthly_rets[:L]])
+    
+    boot_medians = []
+    for _ in range(n_resamples):
+        starts = rng.randint(0, T, size=n_blocks)
+        blocks = [circ_rets[s:s+L] for s in starts]
+        pseudo_series = np.concatenate(blocks)[:T]
+        xirrs = [fast_dca_xirr(pseudo_series[i:i+h_months]) for i in range(T - h_months + 1)]
+        boot_medians.append(float(np.median(xirrs)))
+        
+    ci_low = round(float(np.percentile(boot_medians, 2.5)), 4)
+    ci_high = round(float(np.percentile(boot_medians, 97.5)), 4)
+    return ci_low, ci_high
+

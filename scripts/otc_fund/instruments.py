@@ -273,7 +273,7 @@ PROXY_LINEAGES = {
     ],
     "proxy_bond_qdii": [
         {"stage": 1, "code": "000290", "name": "鹏华全球高收益债(QDII)A", "start": "2015-01-05", "end": "2017-12-10"},
-        {"stage": 2, "code": "004998", "name": "南方亚洲美元收益债券(QDII)A", "start": "2017-12-11", "end": "2026-08-06"}
+        {"stage": 2, "code": "004998", "name": "长信全球债券(QDII)人民币", "start": "2017-12-11", "end": "2026-08-06"}
     ],
     "proxy_quant_a": [
         {"stage": 1, "code": "050002", "name": "博时裕富沪深300指数基金A", "start": "2015-01-05", "end": "2016-03-14"},
@@ -319,6 +319,25 @@ def get_instrument(code: str) -> InstrumentMeta:
         return BENCHMARKS[code]
     raise KeyError(f"Instrument with code {code} not registered in metadata registry.")
 
+COLUMN_TO_CODE: Dict[str, str] = {
+    "bond_pure_000015": "000015",
+    "bond_qdii_004998": "004998",
+    "dividend_100032": "100032",
+    "money_market_000198": "000198",
+    "quant_a_001917": "001917",
+    "gold_000216": "000216",
+    "nasdaq_000834": "000834",
+    "global_tech_017730": "017730",
+    "oil_501018": "501018",
+    "sh_index_000001": "sh_index_000001",
+    "csi300_fund_050002": "050002",
+    "fund_050002": "050002",
+    "proxy_bond_qdii": "004998",
+    "proxy_quant_a": "001917",
+    "proxy_oil": "501018",
+    "proxy_global_tech": "017730",
+}
+
 def resolve_sub_fee(code_or_column: str, default_fee: float = 0.0015) -> float:
     """
     Dynamically resolve statutory subscription fee for an asset column or fund code.
@@ -328,17 +347,17 @@ def resolve_sub_fee(code_or_column: str, default_fee: float = 0.0015) -> float:
     - Fallback: default_fee (0.0015)
     """
     import re
-    if "000198" in code_or_column:
-        return 0.0
-    if "sh_index" in code_or_column:
-        return 0.0
-        
+    # 1. Check exact column-to-code mapping
+    lookup_key = COLUMN_TO_CODE.get(code_or_column, code_or_column)
+    
+    # 2. Try direct instrument lookup
     try:
-        return get_instrument(code_or_column).sub_fee
+        return get_instrument(lookup_key).sub_fee
     except KeyError:
         pass
         
-    m = re.search(r"(\d{6})", code_or_column)
+    # 3. Exact 6-digit code extraction (avoids arbitrary substring collisions)
+    m = re.search(r"(?:^|_)(\d{6})(?:$|_)", code_or_column)
     if m:
         c = m.group(1)
         try:
@@ -347,3 +366,4 @@ def resolve_sub_fee(code_or_column: str, default_fee: float = 0.0015) -> float:
             pass
             
     return default_fee
+
