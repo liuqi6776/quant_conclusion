@@ -232,6 +232,7 @@ def test_forbidden_deprecated_strings(stable_doc_content, dca_doc_content):
         "39,140",              # Deprecated prototype Open-Loop fee
         "16,205",              # Deprecated prototype PC fee
         "7.1668",              # Deprecated inaccurate USD/CNY upper bound
+        "无可辩驳",              # Over-rhetorical phrasing deprecated in Round 6
     ]
 
     for forbidden in forbidden_list:
@@ -266,20 +267,41 @@ def test_scenario_a_yearly_evolution_consistency(dca_doc_content):
         assert roi in dca_doc_content, f"Scenario A {year} ROI {roi} missing in DCA doc"
 
 
+def test_scenario_a_custom_capital_ratio_drawdown_consistency(expected_metrics, dca_doc_content):
+    """Verify custom capital ratio drawdown row in Scenario A matches expected_metrics."""
+    sc_a = expected_metrics["scenarios"]["lump_100w_plus_monthly_1w"]
+    dd_7 = f"{sc_a['modified_7_asset']['custom_capital_ratio_drawdown'] * 100:.2f}%"
+    dd_no_act = f"{sc_a['counterfactual_no_active']['custom_capital_ratio_drawdown'] * 100:.2f}%"
+    dd_9 = f"{sc_a['canonical_9_asset']['custom_capital_ratio_drawdown'] * 100:.2f}%"
+    dd_pb = f"{sc_a['passive_broad_index']['custom_capital_ratio_drawdown'] * 100:.2f}%"
+    dd_sh = f"{sc_a['shanghai_index']['custom_capital_ratio_drawdown'] * 100:.2f}%"
+    dd_300 = f"{sc_a['csi300_fund']['custom_capital_ratio_drawdown'] * 100:.2f}%"
+
+    assert dd_7 in dca_doc_content, f"Custom DD 7-asset {dd_7} missing in DCA doc Scenario A"
+    assert dd_no_act in dca_doc_content, f"Custom DD counterfactual {dd_no_act} missing in DCA doc Scenario A"
+    assert dd_9 in dca_doc_content, f"Custom DD 9-asset {dd_9} missing in DCA doc Scenario A"
+    assert dd_pb in dca_doc_content, f"Custom DD passive broad {dd_pb} missing in DCA doc Scenario A"
+    assert dd_sh in dca_doc_content, f"Custom DD shanghai {dd_sh} missing in DCA doc Scenario A"
+    assert dd_300 in dca_doc_content, f"Custom DD CSI300 {dd_300} missing in DCA doc Scenario A"
+
+
 def test_scenario_b_custom_capital_ratio_drawdown_consistency(expected_metrics, dca_doc_content):
     """Verify custom capital ratio drawdown row in Scenario B matches expected_metrics."""
     sc_b = expected_metrics["scenarios"]["pure_monthly_1w_dca"]
     dd_7 = f"{sc_b['modified_7_asset']['custom_capital_ratio_drawdown'] * 100:.2f}%"
+    dd_no_act = f"{sc_b['counterfactual_no_active']['custom_capital_ratio_drawdown'] * 100:.2f}%"
     dd_9 = f"{sc_b['canonical_9_asset']['custom_capital_ratio_drawdown'] * 100:.2f}%"
     dd_pb = f"{sc_b['passive_broad_index']['custom_capital_ratio_drawdown'] * 100:.2f}%"
     dd_sh = f"{sc_b['shanghai_index']['custom_capital_ratio_drawdown'] * 100:.2f}%"
     dd_300 = f"{sc_b['csi300_fund']['custom_capital_ratio_drawdown'] * 100:.2f}%"
 
     assert dd_7 in dca_doc_content, f"Custom DD 7-asset {dd_7} missing in DCA doc"
+    assert dd_no_act in dca_doc_content, f"Custom DD counterfactual {dd_no_act} missing in DCA doc"
     assert dd_9 in dca_doc_content, f"Custom DD 9-asset {dd_9} missing in DCA doc"
     assert dd_pb in dca_doc_content, f"Custom DD passive broad {dd_pb} missing in DCA doc"
     assert dd_sh in dca_doc_content, f"Custom DD shanghai {dd_sh} missing in DCA doc"
     assert dd_300 in dca_doc_content, f"Custom DD CSI300 {dd_300} missing in DCA doc"
+
 
 
 

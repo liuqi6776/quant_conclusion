@@ -9,7 +9,7 @@
 
 ## 一、 执行摘要与三大实证定论 / Executive Summary & Core Empirical Findings
 
-本项研究严格响应第五轮审查中关于**“第二优先：证明选股是否优于可投资 ETF，证明 Transformer 是否优于树模型”**的核心要求。通过在生产级真实账本 v2.3 下同口径对比 6 组策略，得出三大无可辩驳的量化定论：
+本项研究严格响应第五轮审查中关于**“第二优先：证明选股是否优于可投资 ETF，证明 Transformer 是否优于树模型”**的核心要求。通过在生产级真实账本 v2.3 下同口径对比 6 组策略，得出三大客观明确的量化定论：
 
 ### 1. 定论一：SCS 情绪择时在纯 ETF 上具备强大的独立战力 / Independent Power of SCS Timing on Pure ETFs
 - 纯粹使用 **中证1000 ETF (512100.SH)** 作为股票多头敞口、结合连续 SCS 择时并停泊于国债/黄金/货币 ETF 的 **`etf_scs_timing`** 方案：

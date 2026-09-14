@@ -20,7 +20,7 @@
   - **会计与记账底层 100% 覆盖**：单向前向事件账本（`ledger.py`）、阶梯持有时长赎回费（`fees.py`）、显式除息日净值再投（`dividend_events.csv`）、严格成立日 NaN 隔离、晚成立资产列对齐及独立原生 Numpy 对拍全部通过单元测试；
   - **日度账本流水哈希锁定**：在 `expected_metrics.json` 中为场景 B 与场景 A 严格锁定了 2,825 行逐日流水的 SHA-256 哈希（`ledger_hash`），审计脚本执行强制断言；
   - **幸存者偏差量化对照**：设立无主动基金纯被动基准（`counterfactual_no_active`），实证大类资产配置贡献 +7.84% 纯 Beta 超额，主动选品贡献 +2.48% Alpha；
-  - **【阶段一已落地】无前视滚动走步引擎（Walk-Forward Engine）**：成功构建 [`scripts/otc_fund/walk_forward.py`](../scripts/otc_fund/walk_forward.py) 与 [`run_walk_forward_experiment.py`](../scripts/otc_fund/run_walk_forward_experiment.py)（50 项单元与实证测试全通）。基于 Ledoit-Wolf 协方差收缩与边界约束风险平价（$0.05 \le w_i \le 0.35$），实现 2018–2026 逐年无前视动态权重自适应生成。
+  - **【阶段一已落地】无前视滚动走步引擎（Walk-Forward Engine）**：成功构建 [`scripts/otc_fund/walk_forward.py`](../scripts/otc_fund/walk_forward.py) 与 [`run_walk_forward_experiment.py`](../scripts/otc_fund/run_walk_forward_experiment.py)（57 项单元与实证测试全通）。基于 Ledoit-Wolf 协方差收缩与边界约束风险平价（$0.05 \le w_i \le 0.35$），实现 2018–2026 逐年无前视动态权重自适应生成。
 
 ---
 
